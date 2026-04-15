@@ -33,7 +33,7 @@ function createCommandRouter({ fleetService, userRepository, logger }) {
 
     if (upper === "HELP") {
       if (!canExecute(user.role, "HELP")) return "Tidak punya akses.";
-      return formatHelp();
+      return formatHelp(user.role);
     }
 
     if (upper === "LIST PENDING USER") {
