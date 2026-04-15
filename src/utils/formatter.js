@@ -57,6 +57,7 @@ function formatHelp(role = "viewer") {
     lines.push("- LIST PENDING USER");
     lines.push("- APPROVE <CODE> <ROLE> <NAMA>");
     lines.push("- REJECT <CODE>");
+    lines.push("- LOG TERAKHIR");
     // write roles that can be assigned to new user
     lines.push("  (ROLE: VIEWER, OPERATOR, ADMIN)");
   }

@@ -1,12 +1,13 @@
-const { buildHttpServer } = require('./httpServer');
-const { createLogger } = require('../config/logger');
-const { env } = require('../config/env');
-const { createCommandRouter } = require('../handlers/commandRouter');
-const { createFleetRepository } = require('../repositories/fleetRepository');
-const { createFleetService } = require('../services/fleetService');
-const { createAlertScheduler } = require('../scheduler/alertScheduler');
-const { createBaileysAdapter } = require('../adapters/whatsapp/baileysAdapter');
-const userRepository = require('../repositories/userRepository');
+const { buildHttpServer } = require("./httpServer");
+const { createLogger } = require("../config/logger");
+const { env } = require("../config/env");
+const { createCommandRouter } = require("../handlers/commandRouter");
+const { createFleetRepository } = require("../repositories/fleetRepository");
+const { createFleetService } = require("../services/fleetService");
+const { createAlertScheduler } = require("../scheduler/alertScheduler");
+const { createBaileysAdapter } = require("../adapters/whatsapp/baileysAdapter");
+const auditRepository = require("../repositories/auditRepository");
+const userRepository = require("../repositories/userRepository");
 
 async function createApp() {
   const logger = createLogger();
@@ -18,7 +19,7 @@ async function createApp() {
   const sendText = async (to, text) => {
     if (!to || !text) return;
     if (!whatsapp) {
-      logger.warn({ to }, 'WhatsApp adapter not ready, skip sendText');
+      logger.warn({ to }, "WhatsApp adapter not ready, skip sendText");
       return;
     }
     await whatsapp.sendText(to, text);
@@ -27,6 +28,7 @@ async function createApp() {
   const commandRouter = createCommandRouter({
     fleetService,
     userRepository,
+    auditRepository,
     logger,
     env,
     sendText,
@@ -56,7 +58,7 @@ async function createApp() {
 
       await whatsapp.start();
       alertScheduler.start();
-      logger.info('Fleet WA Bot started');
+      logger.info("Fleet WA Bot started");
     },
   };
 }

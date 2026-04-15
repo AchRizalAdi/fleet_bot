@@ -18,6 +18,7 @@ const ROLE_PERMISSIONS = {
     "LIST_PENDING_USER",
     "APPROVE_USER",
     "REJECT_USER",
+    "VIEW_AUDIT_LOG",
   ],
 };
 

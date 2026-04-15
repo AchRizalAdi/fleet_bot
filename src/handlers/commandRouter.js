@@ -6,7 +6,7 @@ function normalizeJid(value = "") {
   return String(value).trim().toLowerCase();
 }
 
-function createCommandRouter({ fleetService, userRepository, logger, env, sendText }) {
+function createCommandRouter({ fleetService, userRepository, auditRepository, logger, env, sendText }) {
   async function handleIncoming({ sender, text }) {
     const normalizedSender = normalizeJid(sender);
     const message = normalizeMessage(text);
@@ -60,6 +60,19 @@ function createCommandRouter({ fleetService, userRepository, logger, env, sendTe
         return `Kode ${code} tidak ditemukan atau sudah diproses.`;
       }
 
+      await auditRepository.createLog({
+        action: "APPROVE_USER",
+        actorName: user.name,
+        actorJid: normalizedSender,
+        actorRole: user.role,
+        target: result.pending.jid,
+        payload: {
+          code,
+          approvedRole: role,
+          approvedName: name,
+        },
+      });
+
       try {
         if (sendText && result.pending?.jid) {
           await sendText(result.pending.jid, formatUserActivatedMessage({ name, role }));
@@ -84,6 +97,17 @@ function createCommandRouter({ fleetService, userRepository, logger, env, sendTe
       if (!result) {
         return `Kode ${code} tidak ditemukan atau sudah diproses.`;
       }
+
+      await auditRepository.createLog({
+        action: "REJECT_USER",
+        actorName: user.name,
+        actorJid: normalizedSender,
+        actorRole: user.role,
+        target: result.jid,
+        payload: {
+          code,
+        },
+      });
 
       return `User berhasil di-reject.\nKode: ${code}`;
     }
@@ -136,6 +160,27 @@ function createCommandRouter({ fleetService, userRepository, logger, env, sendTe
       if (!canExecute(user.role, "ALERT_HARI_INI")) return "Tidak punya akses.";
       const alerts = await fleetService.getTodayAlerts();
       return formatAlertSummary(alerts);
+    }
+
+    if (upper === "LOG TERAKHIR") {
+      if (!canExecute(user.role, "VIEW_AUDIT_LOG")) return "Tidak punya akses.";
+
+      const logs = await auditRepository.getLogs(10);
+
+      if (logs.length === 0) {
+        return "Belum ada audit log.";
+      }
+
+      return [
+        "AUDIT LOG TERAKHIR",
+        "",
+        ...logs.map((log, index) => {
+          return `${index + 1}. ${log.action}
+          Pelaku: ${log.actorName}
+          Target: ${log.target || "-"}
+          Waktu: ${log.createdAt}`;
+        }),
+      ].join("\n\n");
     }
 
     // return "Command tidak dikenali. Ketik HELP.";
