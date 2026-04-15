@@ -26,14 +26,30 @@ async function getPendingUsers() {
   return readJson(pendingUsersFile, []);
 }
 
+function normalizeJid(jid) {
+  return String(jid || "").trim().toLowerCase();
+}
+
+function jidMatches(recordJid, inputJid) {
+  const normalizedRecord = normalizeJid(recordJid);
+  const normalizedInput = normalizeJid(inputJid);
+
+  if (!normalizedRecord || !normalizedInput) return false;
+  if (normalizedRecord === normalizedInput) return true;
+
+  const recordLocal = normalizedRecord.split("@")[0];
+  const inputLocal = normalizedInput.split("@")[0];
+  return recordLocal === inputLocal;
+}
+
 async function findUserByJid(jid) {
   const users = await getUsers();
-  return users.find((user) => user.jid === jid && user.isActive) || null;
+  return users.find((user) => jidMatches(user.jid, jid) && user.isActive) || null;
 }
 
 async function findPendingByJid(jid) {
   const pendingUsers = await getPendingUsers();
-  return pendingUsers.find((item) => item.jid === jid && item.status === "pending") || null;
+  return pendingUsers.find((item) => jidMatches(item.jid, jid) && item.status === "pending") || null;
 }
 
 async function findPendingByCode(code) {

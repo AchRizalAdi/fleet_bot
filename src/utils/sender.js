@@ -1,6 +1,6 @@
 function normalizeSender(senderJid) {
   if (!senderJid) return '';
-  return senderJid.replace(/@.+$/, '');
+  return String(senderJid).trim().toLowerCase();
 }
 
 module.exports = { normalizeSender };
