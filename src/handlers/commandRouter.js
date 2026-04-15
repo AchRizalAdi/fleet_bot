@@ -1,12 +1,44 @@
 const { normalizeMessage } = require("../utils/normalizeMessage");
-const { formatHelp, formatDocumentStatus, formatTireStock, formatAlertSummary, formatDefaultReply, formatUserActivatedMessage } = require("../utils/formatter");
+const { normalizeSender } = require("../utils/sender");
+const {
+  formatHelp,
+  formatDocumentStatus,
+  formatTireStock,
+  formatAlertSummary,
+  formatDefaultReply,
+  formatUserActivatedMessage,
+} = require("../utils/formatter");
 const { canExecute } = require("../config/permissions");
 
+const commandModules = [
+  require("./commands/helpCommand"),
+  require("./commands/listPendingUsersCommand"),
+  require("./commands/approveUserCommand"),
+  require("./commands/rejectUserCommand"),
+  require("./commands/cekSuratCommand"),
+  require("./commands/updateSuratCommand"),
+  require("./commands/cekStockBanCommand"),
+  require("./commands/updateBanCommand"),
+  require("./commands/alertHariIniCommand"),
+  require("./commands/logTerakhirCommand"),
+];
+
 function normalizeJid(value = "") {
-  return String(value).trim().toLowerCase();
+  return String(normalizeSender(value)).trim().toLowerCase();
 }
 
-function createCommandRouter({ fleetService, userRepository, auditRepository, logger, env, sendText }) {
+function createCommandRouter({ fleetService, userRepository, auditRepository, logger, sendText }) {
+  const services = { fleetService };
+  const repositories = { userRepository, auditRepository };
+  const utils = {
+    formatHelp,
+    formatDocumentStatus,
+    formatTireStock,
+    formatAlertSummary,
+    formatDefaultReply,
+    formatUserActivatedMessage,
+  };
+
   async function handleIncoming({ sender, text }) {
     const normalizedSender = normalizeJid(sender);
     const message = normalizeMessage(text);
@@ -26,164 +58,26 @@ function createCommandRouter({ fleetService, userRepository, auditRepository, lo
       return `Akun Anda belum terdaftar.\nKode registrasi: ${pending.code}\nHubungi admin untuk aktivasi.`;
     }
 
-    if (upper === "HELP") {
-      if (!canExecute(user.role, "HELP")) return "Tidak punya akses.";
-      return formatHelp(user.role);
-    }
+    for (const command of commandModules) {
+      const match = upper.match(command.pattern);
+      if (!match) continue;
 
-    if (upper === "LIST PENDING USER") {
-      if (!canExecute(user.role, "LIST_PENDING_USER")) return "Tidak punya akses.";
-      const pendingUsers = await userRepository.getPendingUsers();
-      const activePending = pendingUsers.filter((item) => item.status === "pending");
-
-      if (activePending.length === 0) {
-        return "Tidak ada user pending.";
+      if (!canExecute(user.role, command.permission)) {
+        return "Tidak punya akses.";
       }
 
-      return ["PENDING USER:", ...activePending.map((item, index) => `${index + 1}. ${item.code} - ${item.jid}`)].join("\n");
-    }
-
-    let match = upper.match(/^APPROVE\s+([A-Z0-9-]+)\s+(VIEWER|OPERATOR|ADMIN)\s+(.+)$/);
-    if (match) {
-      if (!canExecute(user.role, "APPROVE_USER")) return "Tidak punya akses.";
-
-      const [, code, role, name] = match;
-
-      const result = await userRepository.approvePendingUser({
-        code,
-        role,
-        name,
-        approvedBy: normalizedSender,
+      return command.execute({
+        match,
+        user,
+        sender: normalizedSender,
+        services,
+        repositories,
+        utils,
+        sendText,
+        logger,
       });
-
-      if (!result) {
-        return `Kode ${code} tidak ditemukan atau sudah diproses.`;
-      }
-
-      await auditRepository.createLog({
-        action: "APPROVE_USER",
-        actorName: user.name,
-        actorJid: normalizedSender,
-        actorRole: user.role,
-        target: result.pending.jid,
-        payload: {
-          code,
-          approvedRole: role,
-          approvedName: name,
-        },
-      });
-
-      try {
-        if (sendText && result.pending?.jid) {
-          await sendText(result.pending.jid, formatUserActivatedMessage({ name, role }));
-        }
-      } catch (err) {
-        logger.error({ err, jid: result.pending?.jid }, "Failed sending activation message");
-      }
-
-      return ["USER BERHASIL DIAKTIFKAN", "", `Nama: ${name}`, `Role: ${role}`].join("\n");
     }
 
-    match = upper.match(/^REJECT\s+([A-Z0-9-]+)$/);
-    if (match) {
-      if (!canExecute(user.role, "REJECT_USER")) return "Tidak punya akses.";
-
-      const [, code] = match;
-      const result = await userRepository.rejectPendingUser({
-        code,
-        rejectedBy: normalizedSender,
-      });
-
-      if (!result) {
-        return `Kode ${code} tidak ditemukan atau sudah diproses.`;
-      }
-
-      await auditRepository.createLog({
-        action: "REJECT_USER",
-        actorName: user.name,
-        actorJid: normalizedSender,
-        actorRole: user.role,
-        target: result.jid,
-        payload: {
-          code,
-        },
-      });
-
-      return `User berhasil di-reject.\nKode: ${code}`;
-    }
-
-    match = upper.match(/^CEK SURAT\s+([A-Z0-9-]+)$/);
-    if (match) {
-      if (!canExecute(user.role, "CEK_SURAT")) return "Tidak punya akses.";
-      const result = await fleetService.getVehicleDocuments(match[1]);
-      return formatDocumentStatus(result);
-    }
-
-    match = upper.match(/^UPDATE SURAT\s+([A-Z0-9-]+)\s+([A-Z]+)\s+(\d{4}-\d{2}-\d{2})$/);
-    if (match) {
-      if (!canExecute(user.role, "UPDATE_SURAT")) return "Tidak punya akses.";
-
-      const [, plate, type, expiryDate] = match;
-      await fleetService.updateVehicleDocument({
-        plate,
-        type,
-        expiryDate,
-        actor: normalizedSender,
-      });
-
-      return `UPDATE SURAT berhasil\nPlat: ${plate}\nJenis: ${type}\nExpired: ${expiryDate}`;
-    }
-
-    match = upper.match(/^CEK STOCK BAN\s+(.+)$/);
-    if (match) {
-      if (!canExecute(user.role, "CEK_STOCK_BAN")) return "Tidak punya akses.";
-      const stock = await fleetService.getTireStock(match[1].trim());
-      return formatTireStock(stock);
-    }
-
-    match = upper.match(/^UPDATE BAN\s+([A-Z0-9-]+)\s+([A-Z_]+)\s+(\d+)$/);
-    if (match) {
-      if (!canExecute(user.role, "UPDATE_BAN")) return "Tidak punya akses.";
-
-      const [, plate, position, km] = match;
-      await fleetService.updateTireUsage({
-        plate,
-        position,
-        km: Number(km),
-        actor: normalizedSender,
-      });
-
-      return `UPDATE BAN berhasil\nPlat: ${plate}\nPosisi: ${position}\nKM: ${km}`;
-    }
-
-    if (upper === "ALERT HARI INI") {
-      if (!canExecute(user.role, "ALERT_HARI_INI")) return "Tidak punya akses.";
-      const alerts = await fleetService.getTodayAlerts();
-      return formatAlertSummary(alerts);
-    }
-
-    if (upper === "LOG TERAKHIR") {
-      if (!canExecute(user.role, "VIEW_AUDIT_LOG")) return "Tidak punya akses.";
-
-      const logs = await auditRepository.getLogs(10);
-
-      if (logs.length === 0) {
-        return "Belum ada audit log.";
-      }
-
-      return [
-        "AUDIT LOG TERAKHIR",
-        "",
-        ...logs.map((log, index) => {
-          return `${index + 1}. ${log.action}
-          Pelaku: ${log.actorName}
-          Target: ${log.target || "-"}
-          Waktu: ${log.createdAt}`;
-        }),
-      ].join("\n\n");
-    }
-
-    // return "Command tidak dikenali. Ketik HELP.";
     return formatDefaultReply({ user });
   }
 
