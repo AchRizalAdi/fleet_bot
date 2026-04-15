@@ -1,35 +1,66 @@
-function formatHelp(role = "viewer") {
-  const lines = ["DAFTAR COMMAND"];
+function formatDefaultReply({ user }) {
+  const { jid, name, role } = user;
 
-  // ======================
-  // VIEWER
-  // ======================
+  const lines = ["FLEET OPS BOT", ""];
+  lines.push(
+    "Bot ini digunakan untuk membantu operasional kendaraan melalui WhatsApp."
+  );
+
   lines.push("");
-  lines.push("CEK DATA:");
+
+  lines.push("AKUN ANDA");
+  lines.push(`Nama: ${name || "-"}`);
+  lines.push(`Role: ${role.toUpperCase()}`);
+
+  lines.push("");
+
+  lines.push("FITUR UNTUK ANDA");
+
+  lines.push("- cek surat kendaraan");
+  lines.push("- cek stok ban");
+  lines.push("- melihat alert harian");
+
+  if (role === "operator" || role === "admin") {
+    lines.push("- update surat kendaraan");
+    lines.push("- update pemakaian ban kendaraan");
+  }
+
+  if (role === "admin") {
+    lines.push("- kelola registrasi user");
+  }
+
+  lines.push("");
+  lines.push("Ketik HELP untuk melihat daftar command.");
+
+  return lines.join("\n");
+}
+
+function formatHelp(role = "viewer") {
+  const lines = ["FLEET OPS BOT", "", "DAFTAR COMMAND"];
+
+  lines.push("");
+  lines.push("CEK DATA");
   lines.push("- CEK SURAT <PLAT>");
   lines.push("- CEK STOCK BAN <SKU>");
   lines.push("- ALERT HARI INI");
 
-  // ======================
-  // OPERATOR
-  // ======================
   if (role === "operator" || role === "admin") {
     lines.push("");
-    lines.push("UPDATE DATA:");
+    lines.push("UPDATE DATA");
     lines.push("- UPDATE SURAT <PLAT> <JENIS> <YYYY-MM-DD>");
     lines.push("- UPDATE BAN <PLAT> <POSISI> <KM>");
   }
 
-  // ======================
-  // ADMIN
-  // ======================
   if (role === "admin") {
     lines.push("");
-    lines.push("ADMIN:");
+    lines.push("ADMIN");
     lines.push("- LIST PENDING USER");
-    lines.push("- APPROVE <CODE> <ROLE>");
+    lines.push("- APPROVE <CODE> <ROLE> <NAMA>");
     lines.push("- REJECT <CODE>");
   }
+
+  lines.push("");
+  lines.push("Gunakan format sesuai contoh di atas.");
 
   return lines.join("\n");
 }
@@ -66,4 +97,5 @@ module.exports = {
   formatDocumentStatus,
   formatTireStock,
   formatAlertSummary,
+  formatDefaultReply,
 };

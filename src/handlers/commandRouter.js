@@ -1,10 +1,5 @@
 const { normalizeMessage } = require("../utils/normalizeMessage");
-const {
-  formatHelp,
-  formatDocumentStatus,
-  formatTireStock,
-  formatAlertSummary,
-} = require("../utils/formatter");
+const { formatHelp, formatDocumentStatus, formatTireStock, formatAlertSummary, formatDefaultReply } = require("../utils/formatter");
 const { canExecute } = require("../config/permissions");
 
 function normalizeJid(value = "") {
@@ -45,20 +40,18 @@ function createCommandRouter({ fleetService, userRepository, logger }) {
         return "Tidak ada user pending.";
       }
 
-      return [
-        "PENDING USER:",
-        ...activePending.map((item, index) => `${index + 1}. ${item.code} - ${item.jid}`),
-      ].join("\n");
+      return ["PENDING USER:", ...activePending.map((item, index) => `${index + 1}. ${item.code} - ${item.jid}`)].join("\n");
     }
 
-    let match = upper.match(/^APPROVE\s+([A-Z0-9-]+)\s+(VIEWER|OPERATOR|ADMIN)$/);
+    let match = upper.match(/^APPROVE\s+([A-Z0-9-]+)\s+(VIEWER|OPERATOR|ADMIN)\s+(.+)$/);
     if (match) {
       if (!canExecute(user.role, "APPROVE_USER")) return "Tidak punya akses.";
 
-      const [, code, role] = match;
+      const [, code, role, name] = match;
       const result = await userRepository.approvePendingUser({
         code,
         role,
+        name,
         approvedBy: normalizedSender,
       });
 
@@ -66,7 +59,7 @@ function createCommandRouter({ fleetService, userRepository, logger }) {
         return `Kode ${code} tidak ditemukan atau sudah diproses.`;
       }
 
-      return `User berhasil di-approve.\nKode: ${code}\nRole: ${role}`;
+      return `User berhasil di-approve.\nKode: ${code}\nRole: ${role}\nNama: ${name}`;
     }
 
     match = upper.match(/^REJECT\s+([A-Z0-9-]+)$/);
@@ -136,7 +129,8 @@ function createCommandRouter({ fleetService, userRepository, logger }) {
       return formatAlertSummary(alerts);
     }
 
-    return "Command tidak dikenali. Ketik HELP.";
+    // return "Command tidak dikenali. Ketik HELP.";
+    return formatDefaultReply({ user });
   }
 
   return { handleIncoming };

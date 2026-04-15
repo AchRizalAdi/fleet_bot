@@ -59,7 +59,7 @@ async function createPendingUser({ jid }) {
   return item;
 }
 
-async function approvePendingUser({ code, role, approvedBy }) {
+async function approvePendingUser({ code, role, name, approvedBy }) {
   const pendingUsers = await getPendingUsers();
   const users = await getUsers();
 
@@ -75,7 +75,7 @@ async function approvePendingUser({ code, role, approvedBy }) {
 
   const userRecord = {
     jid: pending.jid,
-    name: pending.jid,
+    name: name,
     role: role.toLowerCase(),
     isActive: true,
     createdAt: new Date().toISOString(),
