@@ -57,6 +57,8 @@ function formatHelp(role = "viewer") {
     lines.push("- LIST PENDING USER");
     lines.push("- APPROVE <CODE> <ROLE> <NAMA>");
     lines.push("- REJECT <CODE>");
+    // write roles that can be assigned to new user
+    lines.push("  (ROLE: VIEWER, OPERATOR, ADMIN)");
   }
 
   lines.push("");
@@ -92,10 +94,22 @@ function formatAlertSummary(items) {
   return ['ALERT HARI INI', ...items.map((v, i) => `${i + 1}. ${v}`)].join('\n');
 }
 
+function formatUserActivatedMessage({ name, role }) {
+  return [
+    "AKUN ANDA TELAH DIAKTIFKAN",
+    "",
+    `Nama: ${name}`,
+    `Role: ${role.toUpperCase()}`,
+    "",
+    "Ketik HELP untuk melihat daftar command.",
+  ].join("\n");
+}
+
 module.exports = {
   formatHelp,
   formatDocumentStatus,
   formatTireStock,
   formatAlertSummary,
   formatDefaultReply,
+  formatUserActivatedMessage,
 };

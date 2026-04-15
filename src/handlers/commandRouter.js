@@ -1,12 +1,12 @@
 const { normalizeMessage } = require("../utils/normalizeMessage");
-const { formatHelp, formatDocumentStatus, formatTireStock, formatAlertSummary, formatDefaultReply } = require("../utils/formatter");
+const { formatHelp, formatDocumentStatus, formatTireStock, formatAlertSummary, formatDefaultReply, formatUserActivatedMessage } = require("../utils/formatter");
 const { canExecute } = require("../config/permissions");
 
 function normalizeJid(value = "") {
   return String(value).trim().toLowerCase();
 }
 
-function createCommandRouter({ fleetService, userRepository, logger }) {
+function createCommandRouter({ fleetService, userRepository, logger, env, sendText }) {
   async function handleIncoming({ sender, text }) {
     const normalizedSender = normalizeJid(sender);
     const message = normalizeMessage(text);
@@ -48,6 +48,7 @@ function createCommandRouter({ fleetService, userRepository, logger }) {
       if (!canExecute(user.role, "APPROVE_USER")) return "Tidak punya akses.";
 
       const [, code, role, name] = match;
+
       const result = await userRepository.approvePendingUser({
         code,
         role,
@@ -59,7 +60,15 @@ function createCommandRouter({ fleetService, userRepository, logger }) {
         return `Kode ${code} tidak ditemukan atau sudah diproses.`;
       }
 
-      return `User berhasil di-approve.\nKode: ${code}\nRole: ${role}\nNama: ${name}`;
+      try {
+        if (sendText && result.pending?.jid) {
+          await sendText(result.pending.jid, formatUserActivatedMessage({ name, role }));
+        }
+      } catch (err) {
+        logger.error({ err, jid: result.pending?.jid }, "Failed sending activation message");
+      }
+
+      return ["USER BERHASIL DIAKTIFKAN", "", `Nama: ${name}`, `Role: ${role}`].join("\n");
     }
 
     match = upper.match(/^REJECT\s+([A-Z0-9-]+)$/);

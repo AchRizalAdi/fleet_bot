@@ -13,16 +13,28 @@ async function createApp() {
   const repository = createFleetRepository();
   const fleetService = createFleetService({ repository, logger });
 
+  let whatsapp;
+
+  const sendText = async (to, text) => {
+    if (!to || !text) return;
+    if (!whatsapp) {
+      logger.warn({ to }, 'WhatsApp adapter not ready, skip sendText');
+      return;
+    }
+    await whatsapp.sendText(to, text);
+  };
+
   const commandRouter = createCommandRouter({
     fleetService,
     userRepository,
     logger,
     env,
+    sendText,
   });
 
   const httpServer = buildHttpServer({ logger });
 
-  const whatsapp = createBaileysAdapter({
+  whatsapp = createBaileysAdapter({
     logger,
     commandRouter,
     enabled: env.WA_ENABLED,
@@ -33,10 +45,7 @@ async function createApp() {
     logger,
     cronExpression: env.ALERT_CRON,
     fleetService,
-    sendText: async (to, text) => {
-      if (!to) return;
-      await whatsapp.sendText(to, text);
-    },
+    sendText,
     alertTarget: env.ALERT_TARGET,
   });
 
