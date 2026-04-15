@@ -1,0 +1,4 @@
+node_modules
+.wa-auth
+.env
+npm-debug.log*

@@ -1,0 +1,24 @@
+{
+  "name": "fleet-wa-bot-starter",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Internal Fleet OPS WhatsApp bot starter using Baileys with clean architecture and easy migration path to Cloud API.",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "node src/index.js",
+    "start": "NODE_ENV=production node src/index.js",
+    "health": "node scripts/healthcheck.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@hapi/boom": "^10.0.1",
+    "@whiskeysockets/baileys": "^7.0.0-rc.9",
+    "dotenv": "^16.4.5",
+    "fastify": "^4.28.1",
+    "node-cron": "^3.0.3",
+    "pino": "^9.3.2",
+    "qrcode-terminal": "^0.12.0"
+  }
+}
