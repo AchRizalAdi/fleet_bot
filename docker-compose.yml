@@ -1,11 +1,14 @@
-version: '3.8'
+version: "3.8"
+
 services:
   fleet-wa-bot:
     build: .
+    container_name: fleet-wa-bot
     ports:
       - "3000:3000"
     env_file:
       - .env
     volumes:
       - ./.wa-auth:/app/.wa-auth
+      - ./data:/app/data
     restart: unless-stopped
