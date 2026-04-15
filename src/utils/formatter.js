@@ -1,13 +1,18 @@
 function formatHelp() {
   return [
-    'Command tersedia:',
-    'HELP',
-    'CEK SURAT <PLAT>',
-    'UPDATE SURAT <PLAT> <JENIS> <YYYY-MM-DD>',
-    'CEK STOCK BAN <SKU>',
-    'UPDATE BAN <PLAT> <POSISI> <KM>',
-    'ALERT HARI INI',
-  ].join('\n');
+    "Command tersedia:",
+    "HELP",
+    "CEK SURAT <PLAT>",
+    "UPDATE SURAT <PLAT> <JENIS> <YYYY-MM-DD>",
+    "CEK STOCK BAN <SKU>",
+    "UPDATE BAN <PLAT> <POSISI> <KM>",
+    "ALERT HARI INI",
+    "",
+    "Admin:",
+    "LIST PENDING USER",
+    "APPROVE <CODE> <ROLE>",
+    "REJECT <CODE>",
+  ].join("\n");
 }
 
 function formatDocumentStatus(result) {

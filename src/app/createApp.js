@@ -6,12 +6,20 @@ const { createFleetRepository } = require('../repositories/fleetRepository');
 const { createFleetService } = require('../services/fleetService');
 const { createAlertScheduler } = require('../scheduler/alertScheduler');
 const { createBaileysAdapter } = require('../adapters/whatsapp/baileysAdapter');
+const userRepository = require('../repositories/userRepository');
 
 async function createApp() {
   const logger = createLogger();
   const repository = createFleetRepository();
   const fleetService = createFleetService({ repository, logger });
-  const commandRouter = createCommandRouter({ fleetService, logger, env });
+
+  const commandRouter = createCommandRouter({
+    fleetService,
+    userRepository,
+    logger,
+    env,
+  });
+
   const httpServer = buildHttpServer({ logger });
 
   const whatsapp = createBaileysAdapter({
