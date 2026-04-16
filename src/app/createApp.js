@@ -25,6 +25,15 @@ async function createApp() {
     await whatsapp.sendText(to, text);
   };
 
+  const sendImage = async (to, imagePath, caption) => {
+    if (!to || !imagePath) return;
+    if (!whatsapp) {
+      logger.warn({ to, imagePath }, "WhatsApp adapter not ready, skip sendImage");
+      return;
+    }
+    await whatsapp.sendImage(to, imagePath, caption);
+  };
+
   const commandRouter = createCommandRouter({
     fleetService,
     userRepository,
@@ -32,6 +41,7 @@ async function createApp() {
     logger,
     env,
     sendText,
+    sendImage,
   });
 
   const httpServer = buildHttpServer({ logger });

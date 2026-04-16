@@ -1,3 +1,5 @@
+const fs = require("fs");
+const path = require("path");
 const { normalizeMessage } = require("../utils/normalizeMessage");
 const { normalizeSender } = require("../utils/sender");
 const {
@@ -27,7 +29,7 @@ function normalizeJid(value = "") {
   return String(normalizeSender(value)).trim().toLowerCase();
 }
 
-function createCommandRouter({ fleetService, userRepository, auditRepository, logger, sendText }) {
+function createCommandRouter({ fleetService, userRepository, auditRepository, logger, sendText, sendImage }) {
   const services = { fleetService };
   const repositories = { userRepository, auditRepository };
   const utils = {
@@ -39,7 +41,7 @@ function createCommandRouter({ fleetService, userRepository, auditRepository, lo
     formatUserActivatedMessage,
   };
 
-  async function handleIncoming({ sender, text }) {
+  async function handleIncoming({ sender, replyTo, text }) {
     const normalizedSender = normalizeJid(sender);
     const message = normalizeMessage(text);
     const upper = message.toUpperCase();
@@ -76,6 +78,15 @@ function createCommandRouter({ fleetService, userRepository, auditRepository, lo
         sendText,
         logger,
       });
+    }
+
+    const primaryLogoPath = path.join(process.cwd(), "assets", "logo-cakra.jpg");
+    const fallbackLogoPath = path.join(process.cwd(), "src", "assets", "logo-cakra.jpg");
+    const logoPath = fs.existsSync(primaryLogoPath) ? primaryLogoPath : fallbackLogoPath;
+
+    if (sendImage && replyTo && fs.existsSync(logoPath)) {
+      await sendImage(replyTo, logoPath, formatDefaultReply({ user }));
+      return null;
     }
 
     return formatDefaultReply({ user });

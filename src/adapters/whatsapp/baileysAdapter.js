@@ -1,5 +1,6 @@
 const pino = require("pino");
 const qrcode = require("qrcode-terminal");
+const fs = require("fs");
 const { Boom } = require("@hapi/boom");
 const { default: makeWASocket, DisconnectReason, useMultiFileAuthState, fetchLatestBaileysVersion } = require("@whiskeysockets/baileys");
 
@@ -51,7 +52,7 @@ function createBaileysAdapter({ logger, commandRouter, enabled, authDir }) {
         if (!msg || msg.key.fromMe || !msg.message) return;
 
         const sender = (msg.key.participant || msg.key.remoteJid || "").trim().toLowerCase();
-        const replyTo = (msg.key.remoteJid || "").trim().toLowerCase();
+        const replyTo = msg.key.remoteJid;
 
         const text = msg.message.conversation || msg.message.extendedTextMessage?.text || msg.message.imageMessage?.caption || "";
 
@@ -66,7 +67,7 @@ function createBaileysAdapter({ logger, commandRouter, enabled, authDir }) {
           "Incoming WhatsApp message",
         );
 
-        const reply = await commandRouter.handleIncoming({ sender, text });
+        const reply = await commandRouter.handleIncoming({ sender, replyTo, text });
 
         if (reply && replyTo) {
           await socket.sendMessage(replyTo, { text: reply });
@@ -94,7 +95,24 @@ function createBaileysAdapter({ logger, commandRouter, enabled, authDir }) {
         logger.warn("Socket not ready, skip sendText");
         return;
       }
+      if (!to || !text) return;
       await socket.sendMessage(to, { text });
+    },
+
+    async sendImage(to, imagePath, caption) {
+      if (!enabled) return;
+      if (!socket) {
+        logger.warn("Socket not ready, skip sendImage");
+        return;
+      }
+      if (!to || !imagePath) return;
+      if (!fs.existsSync(imagePath)) {
+        logger.warn({ imagePath }, "Image file not found, skip sendImage");
+        return;
+      }
+
+      const imageBuffer = fs.readFileSync(imagePath);
+      await socket.sendMessage(to, { image: imageBuffer, caption: caption || "" });
     },
   };
 }
