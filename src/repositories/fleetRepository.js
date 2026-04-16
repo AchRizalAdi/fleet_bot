@@ -1,4 +1,4 @@
-function createFleetRepository() {
+function createFleetRepository({ env }) {
   const vehicleDocuments = {
     B1234CD: {
       plate: 'B1234CD',
@@ -49,6 +49,24 @@ function createFleetRepository() {
       tireUsage.push({ plate, position, km, actor, at: new Date().toISOString() });
       auditLogs.push({ type: 'UPDATE_BAN', plate, position, km, actor, at: new Date().toISOString() });
       return { ok: true };
+    },
+
+    async fetchNotifications() {
+      const url = `${env.TMS_API_BASE_URL}/api/shared/notification`;
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Accept': '*/*',
+          'x-api-key': env.TMS_API_KEY,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`TMS API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
     },
 
     async getTodayAlerts() {

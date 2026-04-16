@@ -11,7 +11,7 @@ const userRepository = require("../repositories/userRepository");
 
 async function createApp() {
   const logger = createLogger();
-  const repository = createFleetRepository();
+  const repository = createFleetRepository({ env });
   const fleetService = createFleetService({ repository, logger });
 
   let whatsapp;

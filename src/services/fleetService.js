@@ -19,7 +19,13 @@ function createFleetService({ repository, logger }) {
     },
 
     async getTodayAlerts() {
-      return repository.getTodayAlerts();
+      try {
+        const alerts = await repository.fetchNotifications();
+        return alerts;
+      } catch (error) {
+        logger.error({ error: error.message }, 'Failed to fetch notifications');
+        return { error: true };
+      }
     },
   };
 }

@@ -26,6 +26,8 @@ const env = {
     .filter(Boolean),
   ALERT_TARGET: getRequiredString('ALERT_TARGET', ''),
   ALERT_CRON: getRequiredString('ALERT_CRON', '0 8 * * *'),
+  TMS_API_BASE_URL: getRequiredString('TMS_API_BASE_URL', 'http://tms.cakraindo.com:7011'),
+  TMS_API_KEY: getRequiredString('TMS_API_KEY', ''),
 };
 
 module.exports = { env };
