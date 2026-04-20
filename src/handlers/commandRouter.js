@@ -80,11 +80,11 @@ function createCommandRouter({ fleetService, userRepository, auditRepository, lo
     const logoPath = fs.existsSync(primaryLogoPath) ? primaryLogoPath : fallbackLogoPath;
 
     if (sendImage && replyTo && fs.existsSync(logoPath)) {
-      await sendImage(replyTo, logoPath, formatDefaultReply({ user }));
+      await sendImage(replyTo, logoPath, formatDefaultReplyShortVer({ user }));
       return null;
     }
 
-    return formatDefaultReply({ user });
+    return formatDefaultReplyShortVer({ user });
   }
 
   return { handleIncoming };
