@@ -148,5 +148,6 @@ module.exports = {
   formatTireStock,
   formatAlertSummary,
   formatDefaultReply,
+  formatDefaultReplyShortVer,
   formatUserActivatedMessage,
 };

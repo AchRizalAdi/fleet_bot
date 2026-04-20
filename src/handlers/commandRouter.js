@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const { normalizeMessage } = require("../utils/normalizeMessage");
 const { normalizeSender } = require("../utils/sender");
-const { formatHelp, formatDocumentStatus, formatTireStock, formatAlertSummary, formatDefaultReply, formatUserActivatedMessage } = require("../utils/formatter");
+const { formatHelp, formatDocumentStatus, formatTireStock, formatAlertSummary, formatDefaultReply, formatDefaultReplyShortVer, formatUserActivatedMessage } = require("../utils/formatter");
 // const { canExecute } = require("../config/permissions");
 
 const commandModules = [
@@ -31,6 +31,7 @@ function createCommandRouter({ fleetService, userRepository, auditRepository, lo
     formatTireStock,
     formatAlertSummary,
     formatDefaultReply,
+    formatDefaultReplyShortVer,
     formatUserActivatedMessage,
   };
 
