@@ -36,7 +36,7 @@ function createUserRepository({ apiClient, logger }) {
             jid: response.data.jid,
             name: response.data.name,
             role: response.data.role_name,
-            isActive: true,
+            isActive: response.data.is_active === 1 || response.data.is_active === true,
           };
         }
 
@@ -62,7 +62,7 @@ function createUserRepository({ apiClient, logger }) {
           return {
             code: response.data.code,
             jid: response.data.jid,
-            status: 'pending',
+            status: response.data.status,
             requestedAt: response.data.created_at,
           };
         }
@@ -85,7 +85,7 @@ function createUserRepository({ apiClient, logger }) {
           return {
             code: response.data.code,
             jid: response.data.jid,
-            status: 'pending',
+            status: response.data.status,
             requestedAt: response.data.created_at,
           };
         }
