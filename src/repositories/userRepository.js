@@ -31,12 +31,12 @@ function createUserRepository({ apiClient, logger }) {
           number,
         });
 
-        if (response?.data && response.data.is_active) {
+        if (response?.data) {
           return {
             jid: response.data.jid,
             name: response.data.name,
             role: response.data.role_name,
-            isActive: response.data.is_active === 1 || response.data.is_active === true,
+            isActive: response.data.is_active,
           };
         }
 
