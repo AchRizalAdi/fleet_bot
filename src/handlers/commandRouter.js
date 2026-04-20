@@ -51,7 +51,7 @@ function createCommandRouter({ fleetService, userRepository, auditRepository, lo
       }
 
       return `Akun Anda belum terdaftar.\nKode registrasi: ${pending.code}\nHubungi admin untuk aktivasi.`;
-    } else if (user.is_active === false || user.is_active === 0) {
+    } else if (user.isActive === false || user.isActive === 0) {
       return "Akun Anda dinonaktifkan. Hubungi admin untuk bantuan.";
     }
 
