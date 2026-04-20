@@ -1,33 +1,9 @@
-const fs = require("fs/promises");
-const path = require("path");
-
-const usersFile = path.join(process.cwd(), "data", "users.json");
-const pendingUsersFile = path.join(process.cwd(), "data", "pendingUsers.json");
-
-async function readJson(file, fallback = []) {
-  try {
-    const raw = await fs.readFile(file, "utf-8");
-    return JSON.parse(raw);
-  } catch (error) {
-    if (error.code === "ENOENT") return fallback;
-    throw error;
-  }
-}
-
-async function writeJson(file, data) {
-  await fs.writeFile(file, JSON.stringify(data, null, 2));
-}
-
-async function getUsers() {
-  return readJson(usersFile, []);
-}
-
-async function getPendingUsers() {
-  return readJson(pendingUsersFile, []);
-}
+/**
+ * User Repository - Calls Laravel API for user management
+ */
 
 function normalizeJid(jid) {
-  return String(jid || "").trim().toLowerCase();
+  return String(jid || '').trim().toLowerCase();
 }
 
 function jidMatches(recordJid, inputJid) {
@@ -37,129 +13,195 @@ function jidMatches(recordJid, inputJid) {
   if (!normalizedRecord || !normalizedInput) return false;
   if (normalizedRecord === normalizedInput) return true;
 
-  const recordLocal = normalizedRecord.split("@")[0];
-  const inputLocal = normalizedInput.split("@")[0];
+  const recordLocal = normalizedRecord.split('@')[0];
+  const inputLocal = normalizedInput.split('@')[0];
   return recordLocal === inputLocal;
 }
 
-async function findUserByJid(jid) {
-  const users = await getUsers();
-  return users.find((user) => jidMatches(user.jid, jid) && user.isActive) || null;
-}
+function createUserRepository({ apiClient, logger }) {
+  return {
+    /**
+     * Check or register user via API
+     * Response: { user: {...} | null, pending: {...} | null, isActive: boolean }
+     */
+    async findUserByJid(jid, number = null) {
+      try {
+        const response = await apiClient.post('/api/wa-bot/users/check', {
+          jid,
+          number,
+        });
 
-async function findPendingByJid(jid) {
-  const pendingUsers = await getPendingUsers();
-  return pendingUsers.find((item) => jidMatches(item.jid, jid) && item.status === "pending") || null;
-}
+        if (response?.user && response.user.is_active) {
+          return {
+            jid: response.user.jid,
+            name: response.user.name,
+            role: response.user.role,
+            isActive: true,
+          };
+        }
 
-async function findPendingByCode(code) {
-  const pendingUsers = await getPendingUsers();
-  return pendingUsers.find((item) => item.code === code && item.status === "pending") || null;
-}
+        return null;
+      } catch (error) {
+        logger.error({ error: error.message, jid }, 'Failed to check user');
+        return null;
+      }
+    },
 
-async function createPendingUser({ jid }) {
-  const pendingUsers = await getPendingUsers();
+    /**
+     * Find or create pending user registration
+     * Response: { pending: {...} | null }
+     */
+    async findPendingByJid(jid, number = null) {
+      try {
+        const response = await apiClient.post('/api/wa-bot/users/check', {
+          jid,
+          number,
+        });
 
-  const existing = pendingUsers.find((item) => item.jid === jid && item.status === "pending");
-  if (existing) return existing;
+        if (response?.pending && response.pending.status === 'pending') {
+          return {
+            code: response.pending.code,
+            jid: response.pending.jid,
+            status: 'pending',
+            requestedAt: response.pending.created_at,
+          };
+        }
 
-  const item = {
-    code: generateRegistrationCode(),
-    jid,
-    status: "pending",
-    requestedAt: new Date().toISOString(),
+        return null;
+      } catch (error) {
+        logger.error({ error: error.message, jid }, 'Failed to check pending user');
+        return null;
+      }
+    },
+
+    /**
+     * Find pending user by registration code
+     */
+    async findPendingByCode(code) {
+      try {
+        const response = await apiClient.get(`/api/wa-bot/users/pending/${code}`);
+
+        if (response?.pending && response.pending.status === 'pending') {
+          return {
+            code: response.pending.code,
+            jid: response.pending.jid,
+            status: 'pending',
+            requestedAt: response.pending.created_at,
+          };
+        }
+
+        return null;
+      } catch (error) {
+        logger.error({ error: error.message, code }, 'Failed to find pending by code');
+        return null;
+      }
+    },
+
+    /**
+     * Create new pending user (called from check endpoint, but exposed here for compatibility)
+     */
+    async createPendingUser({ jid, number = null }) {
+      try {
+        const response = await apiClient.post('/api/wa-bot/users/check', {
+          jid,
+          number,
+        });
+
+        if (response?.pending && response.pending.status === 'pending') {
+          return {
+            code: response.pending.code,
+            jid: response.pending.jid,
+            status: 'pending',
+            requestedAt: response.pending.created_at,
+          };
+        }
+
+        logger.warn({ jid }, 'No pending user returned from API');
+        return null;
+      } catch (error) {
+        logger.error({ error: error.message, jid }, 'Failed to create pending user');
+        throw error;
+      }
+    },
+
+    /**
+     * Approve pending user
+     */
+    async approvePendingUser({ code, role, name, approvedBy }) {
+      try {
+        const response = await apiClient.post('/api/wa-bot/users/approve', {
+          code,
+          role,
+          name,
+          approved_by: approvedBy,
+        });
+
+        if (!response?.user) {
+          return null;
+        }
+
+        return {
+          pending: {
+            code,
+            jid: response.user.jid,
+          },
+          role: response.user.role,
+        };
+      } catch (error) {
+        logger.error({ error: error.message, code }, 'Failed to approve user');
+        return null;
+      }
+    },
+
+    /**
+     * Reject pending user
+     */
+    async rejectPendingUser({ code, rejectedBy }) {
+      try {
+        const response = await apiClient.post('/api/wa-bot/users/reject', {
+          code,
+          rejected_by: rejectedBy,
+        });
+
+        if (!response?.pending) {
+          return null;
+        }
+
+        return {
+          code: response.pending.code,
+          jid: response.pending.jid,
+          status: 'rejected',
+        };
+      } catch (error) {
+        logger.error({ error: error.message, code }, 'Failed to reject user');
+        return null;
+      }
+    },
+
+    /**
+     * Get all pending users
+     * GET /api/wa-bot/users/pending
+     */
+    async getPendingUsers() {
+      try {
+        const response = await apiClient.get('/api/wa-bot/users/pending');
+
+        if (!Array.isArray(response?.pending)) {
+          return [];
+        }
+
+        return response.pending.map((item) => ({
+          code: item.code,
+          jid: item.jid,
+          status: item.status,
+          requestedAt: item.created_at,
+        }));
+      } catch (error) {
+        logger.error({ error: error.message }, 'Failed to get pending users');
+        return [];
+      }
+    },
   };
-
-  pendingUsers.push(item);
-  await writeJson(pendingUsersFile, pendingUsers);
-  return item;
 }
 
-async function approvePendingUser({ code, role, name, approvedBy }) {
-  const pendingUsers = await getPendingUsers();
-  const users = await getUsers();
-
-  const pendingIndex = pendingUsers.findIndex(
-    (item) => item.code === code && item.status === "pending"
-  );
-
-  if (pendingIndex === -1) return null;
-
-  const pending = pendingUsers[pendingIndex];
-
-  const existingUserIndex = users.findIndex((user) => user.jid === pending.jid);
-
-  const userRecord = {
-    jid: pending.jid,
-    name: name,
-    role: role.toLowerCase(),
-    isActive: true,
-    createdAt: new Date().toISOString(),
-    approvedBy,
-  };
-
-  if (existingUserIndex >= 0) {
-    users[existingUserIndex] = {
-      ...users[existingUserIndex],
-      role: role.toLowerCase(),
-      isActive: true,
-      approvedBy,
-    };
-  } else {
-    users.push(userRecord);
-  }
-
-  pendingUsers[pendingIndex] = {
-    ...pending,
-    status: "approved",
-    approvedAt: new Date().toISOString(),
-    approvedBy,
-    role: role.toLowerCase(),
-  };
-
-  await writeJson(usersFile, users);
-  await writeJson(pendingUsersFile, pendingUsers);
-
-  return { pending, role: role.toLowerCase() };
-}
-
-async function rejectPendingUser({ code, rejectedBy }) {
-  const pendingUsers = await getPendingUsers();
-
-  const pendingIndex = pendingUsers.findIndex(
-    (item) => item.code === code && item.status === "pending"
-  );
-
-  if (pendingIndex === -1) return null;
-
-  const pending = pendingUsers[pendingIndex];
-  pendingUsers[pendingIndex] = {
-    ...pending,
-    status: "rejected",
-    rejectedAt: new Date().toISOString(),
-    rejectedBy,
-  };
-
-  await writeJson(pendingUsersFile, pendingUsers);
-  return pending;
-}
-
-function generateRegistrationCode() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let result = "REG-";
-  for (let i = 0; i < 6; i += 1) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-}
-
-module.exports = {
-  getUsers,
-  getPendingUsers,
-  findUserByJid,
-  findPendingByJid,
-  findPendingByCode,
-  createPendingUser,
-  approvePendingUser,
-  rejectPendingUser,
-};
+module.exports = { createUserRepository };

@@ -1,89 +1,130 @@
-function createFleetRepository({ env }) {
-  const vehicleDocuments = {
-    B1234CD: {
-      plate: 'B1234CD',
-      documents: {
-        STNK: '2027-05-12',
-        KIR: '2026-11-20',
-        PAJAK: '2026-08-01',
-      },
-      status: 'Aman',
-    },
-  };
+/**
+ * Fleet Repository - Calls Laravel API for vehicle and fleet operations
+ */
 
-  const tireStock = {
-    '750R16': {
-      sku: '750R16',
-      brand: 'Bridgestone',
-      available: 8,
-      minimum: 5,
-    },
-  };
-
-  const tireUsage = [];
-  const auditLogs = [];
-
+function createFleetRepository({ apiClient, logger }) {
   return {
+    /**
+     * Get vehicle documents by plate
+     * GET /api/wa-bot/fleet/vehicle-documents/{plate}
+     */
     async findVehicleDocumentsByPlate(plate) {
-      return vehicleDocuments[plate] || null;
-    },
+      try {
+        const response = await apiClient.get(`/api/wa-bot/fleet/vehicle-documents/${plate}`);
 
-    async updateVehicleDocument({ plate, type, expiryDate, actor }) {
-      if (!vehicleDocuments[plate]) {
-        vehicleDocuments[plate] = {
-          plate,
-          documents: {},
-          status: 'Perlu review',
-        };
-      }
-      vehicleDocuments[plate].documents[type] = expiryDate;
-      auditLogs.push({ type: 'UPDATE_SURAT', plate, documentType: type, expiryDate, actor, at: new Date().toISOString() });
-      return vehicleDocuments[plate];
-    },
-
-    async findTireStockBySku(sku) {
-      return tireStock[sku.toUpperCase()] || null;
-    },
-
-    async updateTireUsage({ plate, position, km, actor }) {
-      tireUsage.push({ plate, position, km, actor, at: new Date().toISOString() });
-      auditLogs.push({ type: 'UPDATE_BAN', plate, position, km, actor, at: new Date().toISOString() });
-      return { ok: true };
-    },
-
-    async fetchNotifications() {
-      const url = `${env.TMS_API_BASE_URL}/api/shared/notification`;
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Accept': '*/*',
-          'x-api-key': env.TMS_API_KEY,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`TMS API error: ${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      return Array.isArray(data) ? data : [];
-    },
-
-    async getTodayAlerts() {
-      const alerts = [];
-      Object.values(vehicleDocuments).forEach((item) => {
-        Object.entries(item.documents).forEach(([key, value]) => {
-          if (String(value).startsWith('2026-')) {
-            alerts.push(`${item.plate} - ${key} mendekati masa berlaku (${value})`);
-          }
-        });
-      });
-      Object.values(tireStock).forEach((item) => {
-        if (item.available <= item.minimum) {
-          alerts.push(`Stock ban ${item.sku} tersisa ${item.available}`);
+        if (!response?.vehicle) {
+          return null;
         }
-      });
-      return alerts;
+
+        return {
+          plate: response.vehicle.plate,
+          documents: response.vehicle.documents || {},
+          status: response.vehicle.status,
+        };
+      } catch (error) {
+        logger.error({ error: error.message, plate }, 'Failed to fetch vehicle documents');
+        return null;
+      }
+    },
+
+    /**
+     * Update vehicle document
+     * POST /api/wa-bot/fleet/vehicle-documents/update
+     */
+    async updateVehicleDocument({ plate, type, expiryDate, actor }) {
+      try {
+        const response = await apiClient.post('/api/wa-bot/fleet/vehicle-documents/update', {
+          plate,
+          type,
+          expiry_date: expiryDate,
+          actor,
+        });
+
+        if (!response?.vehicle) {
+          return null;
+        }
+
+        return {
+          plate: response.vehicle.plate,
+          documents: response.vehicle.documents || {},
+          status: response.vehicle.status,
+        };
+      } catch (error) {
+        logger.error({ error: error.message, plate, type }, 'Failed to update vehicle document');
+        return null;
+      }
+    },
+
+    /**
+     * Get tire stock by SKU
+     * GET /api/wa-bot/fleet/tire-stock/{sku}
+     */
+    async findTireStockBySku(sku) {
+      try {
+        const response = await apiClient.get(`/api/wa-bot/fleet/tire-stock/${sku.toUpperCase()}`);
+
+        if (!response?.tire) {
+          return null;
+        }
+
+        return {
+          sku: response.tire.sku,
+          brand: response.tire.brand,
+          available: response.tire.available,
+          minimum: response.tire.minimum,
+        };
+      } catch (error) {
+        logger.error({ error: error.message, sku }, 'Failed to fetch tire stock');
+        return null;
+      }
+    },
+
+    /**
+     * Update tire usage
+     * POST /api/wa-bot/fleet/tire-usage/update
+     */
+    async updateTireUsage({ plate, position, km, actor }) {
+      try {
+        const response = await apiClient.post('/api/wa-bot/fleet/tire-usage/update', {
+          plate,
+          position,
+          km,
+          actor,
+        });
+
+        return { ok: response?.ok !== false };
+      } catch (error) {
+        logger.error({ error: error.message, plate, position }, 'Failed to update tire usage');
+        return { ok: false };
+      }
+    },
+
+    /**
+     * Get today's alerts
+     * GET /api/wa-bot/fleet/alerts/today
+     */
+    async getTodayAlerts() {
+      try {
+        const response = await apiClient.get('/api/wa-bot/fleet/alerts/today');
+        return Array.isArray(response?.alerts) ? response.alerts : [];
+      } catch (error) {
+        logger.error({ error: error.message }, 'Failed to fetch today alerts');
+        return [];
+      }
+    },
+
+    /**
+     * Fetch notifications from TMS
+     * GET /api/shared/notification
+     */
+    async fetchNotifications() {
+      try {
+        const response = await apiClient.get('/api/shared/notification');
+        return Array.isArray(response) ? response : [];
+      } catch (error) {
+        logger.error({ error: error.message }, 'Failed to fetch notifications');
+        return [];
+      }
     },
   };
 }

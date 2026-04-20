@@ -1,56 +1,57 @@
-const fs = require("fs/promises");
-const path = require("path");
+/**
+ * Audit Repository - Calls Laravel API for audit logging
+ * If your Laravel backend handles audit logging natively, this can be minimal
+ */
 
-const auditFile = path.join(process.cwd(), "data", "auditLogs.json");
+function createAuditRepository({ apiClient, logger }) {
+  return {
+    /**
+     * Create an audit log entry via API
+     * POST /api/wa-bot/audit-logs (or similar endpoint in your Laravel API)
+     */
+    async createLog({
+      action,
+      actorName,
+      actorJid,
+      actorRole,
+      target = null,
+      payload = null,
+      status = 'success',
+      note = null,
+    }) {
+      try {
+        await apiClient.post('/api/wa-bot/audit-logs', {
+          action,
+          actor_name: actorName,
+          actor_jid: actorJid,
+          actor_role: actorRole,
+          target,
+          payload,
+          status,
+          note,
+        });
+      } catch (error) {
+        logger.warn(
+          { error: error.message, action, actorJid },
+          'Failed to send audit log to API, logging locally'
+        );
+        // Optionally fallback to local logging if needed
+      }
+    },
 
-async function readJson(file, fallback = []) {
-  try {
-    const raw = await fs.readFile(file, "utf-8");
-    return JSON.parse(raw);
-  } catch (error) {
-    if (error.code === "ENOENT") return fallback;
-    throw error;
-  }
+    /**
+     * Get audit logs (if needed)
+     */
+    async getLogs(limit = 20) {
+      try {
+        const response = await apiClient.get(`/api/wa-bot/audit-logs?limit=${limit}`);
+        return Array.isArray(response?.logs) ? response.logs : [];
+      } catch (error) {
+        logger.error({ error: error.message }, 'Failed to fetch audit logs');
+        return [];
+      }
+    },
+  };
 }
 
-async function writeJson(file, data) {
-  await fs.writeFile(file, JSON.stringify(data, null, 2));
-}
-
-async function createLog({
-  action,
-  actorName,
-  actorJid,
-  actorRole,
-  target = null,
-  payload = null,
-  status = "success",
-  note = null,
-}) {
-  const logs = await readJson(auditFile, []);
-
-  logs.push({
-    id: `AUD-${Date.now()}`,
-    action,
-    actorName,
-    actorJid,
-    actorRole,
-    target,
-    payload,
-    status,
-    note,
-    createdAt: new Date().toISOString(),
-  });
-
-  await writeJson(auditFile, logs);
-}
-
-async function getLogs(limit = 20) {
-  const logs = await readJson(auditFile, []);
-  return logs.slice(-limit).reverse();
-}
-
-module.exports = {
-  createLog,
-  getLogs,
-};
+module.exports = { createAuditRepository };

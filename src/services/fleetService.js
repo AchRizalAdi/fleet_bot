@@ -20,11 +20,11 @@ function createFleetService({ repository, logger }) {
 
     async getTodayAlerts() {
       try {
-        const alerts = await repository.fetchNotifications();
+        const alerts = await repository.getTodayAlerts();
         return alerts;
       } catch (error) {
-        logger.error({ error: error.message }, 'Failed to fetch notifications');
-        return { error: true };
+        logger.error({ error: error.message }, 'Failed to fetch today alerts');
+        return [];
       }
     },
   };

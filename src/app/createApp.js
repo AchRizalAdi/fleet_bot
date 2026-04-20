@@ -2,17 +2,27 @@ const { buildHttpServer } = require("./httpServer");
 const { createLogger } = require("../config/logger");
 const { env } = require("../config/env");
 const { createCommandRouter } = require("../handlers/commandRouter");
+const { createApiClient } = require("../lib/apiClient");
 const { createFleetRepository } = require("../repositories/fleetRepository");
+const { createUserRepository } = require("../repositories/userRepository");
+const { createAuditRepository } = require("../repositories/auditRepository");
 const { createFleetService } = require("../services/fleetService");
 const { createAlertScheduler } = require("../scheduler/alertScheduler");
 const { createBaileysAdapter } = require("../adapters/whatsapp/baileysAdapter");
-const auditRepository = require("../repositories/auditRepository");
-const userRepository = require("../repositories/userRepository");
 
 async function createApp() {
   const logger = createLogger();
-  const repository = createFleetRepository({ env });
-  const fleetService = createFleetService({ repository, logger });
+
+  // Initialize API Client
+  const apiClient = createApiClient({ env, logger });
+
+  // Initialize Repositories
+  const fleetRepository = createFleetRepository({ apiClient, logger });
+  const userRepository = createUserRepository({ apiClient, logger });
+  const auditRepository = createAuditRepository({ apiClient, logger });
+
+  // Initialize Services
+  const fleetService = createFleetService({ repository: fleetRepository, logger });
 
   let whatsapp;
 
