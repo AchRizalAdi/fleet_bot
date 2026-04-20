@@ -2,14 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const { normalizeMessage } = require("../utils/normalizeMessage");
 const { normalizeSender } = require("../utils/sender");
-const {
-  formatHelp,
-  formatDocumentStatus,
-  formatTireStock,
-  formatAlertSummary,
-  formatDefaultReply,
-  formatUserActivatedMessage,
-} = require("../utils/formatter");
+const { formatHelp, formatDocumentStatus, formatTireStock, formatAlertSummary, formatDefaultReply, formatUserActivatedMessage } = require("../utils/formatter");
 // const { canExecute } = require("../config/permissions");
 
 const commandModules = [
@@ -58,6 +51,8 @@ function createCommandRouter({ fleetService, userRepository, auditRepository, lo
       }
 
       return `Akun Anda belum terdaftar.\nKode registrasi: ${pending.code}\nHubungi admin untuk aktivasi.`;
+    } else if (user.is_active === false || user.is_active === 0) {
+      return "Akun Anda dinonaktifkan. Hubungi admin untuk bantuan.";
     }
 
     for (const command of commandModules) {
@@ -66,8 +61,8 @@ function createCommandRouter({ fleetService, userRepository, auditRepository, lo
 
       // if (!canExecute(user.role, command.permission)) {
       //   return "Tidak punya akses.";
-      // }  
-      
+      // }
+
       return command.execute({
         match,
         user,
