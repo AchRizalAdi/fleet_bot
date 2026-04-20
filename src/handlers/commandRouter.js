@@ -10,7 +10,7 @@ const {
   formatDefaultReply,
   formatUserActivatedMessage,
 } = require("../utils/formatter");
-const { canExecute } = require("../config/permissions");
+// const { canExecute } = require("../config/permissions");
 
 const commandModules = [
   require("./commands/helpCommand"),
@@ -64,10 +64,10 @@ function createCommandRouter({ fleetService, userRepository, auditRepository, lo
       const match = upper.match(command.pattern);
       if (!match) continue;
 
-      if (!canExecute(user.role, command.permission)) {
-        return "Tidak punya akses.";
-      }
-
+      // if (!canExecute(user.role, command.permission)) {
+      //   return "Tidak punya akses.";
+      // }  
+      
       return command.execute({
         match,
         user,

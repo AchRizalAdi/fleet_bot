@@ -35,7 +35,7 @@ function createUserRepository({ apiClient, logger }) {
           return {
             jid: response.data.jid,
             name: response.data.name,
-            role: response.data.role,
+            role: response.data.role_name,
             isActive: true,
           };
         }
