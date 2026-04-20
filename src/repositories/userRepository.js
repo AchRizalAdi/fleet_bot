@@ -31,11 +31,11 @@ function createUserRepository({ apiClient, logger }) {
           number,
         });
 
-        if (response?.user && response.user.is_active) {
+        if (response?.data && response.data.is_active) {
           return {
-            jid: response.user.jid,
-            name: response.user.name,
-            role: response.user.role,
+            jid: response.data.jid,
+            name: response.data.name,
+            role: response.data.role,
             isActive: true,
           };
         }
@@ -58,12 +58,12 @@ function createUserRepository({ apiClient, logger }) {
           number,
         });
 
-        if (response?.pending && response.pending.status === 'pending') {
+        if (response?.data && response.data.status === 'pending') {
           return {
-            code: response.pending.code,
-            jid: response.pending.jid,
+            code: response.data.code,
+            jid: response.data.jid,
             status: 'pending',
-            requestedAt: response.pending.created_at,
+            requestedAt: response.data.created_at,
           };
         }
 
@@ -81,12 +81,12 @@ function createUserRepository({ apiClient, logger }) {
       try {
         const response = await apiClient.get(`/api/wa-bot/users/pending/${code}`);
 
-        if (response?.pending && response.pending.status === 'pending') {
+        if (response?.data && response.data.status === 'pending') {
           return {
-            code: response.pending.code,
-            jid: response.pending.jid,
+            code: response.data.code,
+            jid: response.data.jid,
             status: 'pending',
-            requestedAt: response.pending.created_at,
+            requestedAt: response.data.created_at,
           };
         }
 
@@ -107,12 +107,12 @@ function createUserRepository({ apiClient, logger }) {
           number,
         });
 
-        if (response?.pending && response.pending.status === 'pending') {
+        if (response?.data && response.data.status === 'pending') {
           return {
-            code: response.pending.code,
-            jid: response.pending.jid,
+            code: response.data.code,
+            jid: response.data.jid,
             status: 'pending',
-            requestedAt: response.pending.created_at,
+            requestedAt: response.data.created_at,
           };
         }
 
@@ -136,16 +136,16 @@ function createUserRepository({ apiClient, logger }) {
           approved_by: approvedBy,
         });
 
-        if (!response?.user) {
+        if (!response?.data) {
           return null;
         }
 
         return {
           pending: {
             code,
-            jid: response.user.jid,
+            jid: response.data.jid,
           },
-          role: response.user.role,
+          role: response.data.role,
         };
       } catch (error) {
         logger.error({ error: error.message, code }, 'Failed to approve user');
@@ -163,13 +163,13 @@ function createUserRepository({ apiClient, logger }) {
           rejected_by: rejectedBy,
         });
 
-        if (!response?.pending) {
+        if (!response?.data) {
           return null;
         }
 
         return {
-          code: response.pending.code,
-          jid: response.pending.jid,
+          code: response.data.code,
+          jid: response.data.jid,
           status: 'rejected',
         };
       } catch (error) {
@@ -186,11 +186,11 @@ function createUserRepository({ apiClient, logger }) {
       try {
         const response = await apiClient.get('/api/wa-bot/users/pending');
 
-        if (!Array.isArray(response?.pending)) {
+        if (!Array.isArray(response?.data)) {
           return [];
         }
 
-        return response.pending.map((item) => ({
+        return response.data.map((item) => ({
           code: item.code,
           jid: item.jid,
           status: item.status,
