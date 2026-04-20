@@ -9,9 +9,14 @@ const { createAuditRepository } = require("../repositories/auditRepository");
 const { createFleetService } = require("../services/fleetService");
 const { createAlertScheduler } = require("../scheduler/alertScheduler");
 const { createBaileysAdapter } = require("../adapters/whatsapp/baileysAdapter");
+const { getRedisClient } = require("../lib/redisClient");
+const { createAuthCacheService } = require("../services/authCacheService");
 
 async function createApp() {
   const logger = createLogger();
+
+  const redis = await getRedisClient(logger);
+  const authCacheService = createAuthCacheService({ redis });
 
   // Initialize API Client
   const apiClient = createApiClient({ env, logger });
@@ -48,6 +53,7 @@ async function createApp() {
     fleetService,
     userRepository,
     auditRepository,
+    authCacheService,
     logger,
     env,
     sendText,

@@ -22,8 +22,8 @@ function normalizeJid(value = "") {
   return String(normalizeSender(value)).trim().toLowerCase();
 }
 
-function createCommandRouter({ fleetService, userRepository, auditRepository, logger, sendText, sendImage }) {
-  const services = { fleetService };
+function createCommandRouter({ fleetService, userRepository, auditRepository, authCacheService, logger, sendText, sendImage }) {
+  const services = { fleetService, authCacheService };
   const repositories = { userRepository, auditRepository };
   const utils = {
     formatHelp,
@@ -42,17 +42,34 @@ function createCommandRouter({ fleetService, userRepository, auditRepository, lo
 
     if (!message) return null;
 
-    let user = await userRepository.findUserByJid(normalizedSender);
+    let user = await authCacheService.getAuth(normalizedSender);
 
     if (!user) {
-      let pending = await userRepository.findPendingByJid(normalizedSender);
+      user = await userRepository.findUserByJid(normalizedSender);
+
+      if (user) {
+        await authCacheService.setAuth(normalizedSender, user, 300);
+      }
+    }
+
+    if (!user) {
+      let pending = await authCacheService.getPending(normalizedSender);
+
       if (!pending) {
-        pending = await userRepository.createPendingUser({ jid: normalizedSender });
-        logger.info({ sender: normalizedSender, code: pending.code }, "Pending user created");
+        pending = await userRepository.findPendingByJid(normalizedSender);
+
+        if (!pending) {
+          pending = await userRepository.createPendingUser({ jid: normalizedSender });
+          logger.info({ sender: normalizedSender, code: pending.code }, "Pending user created");
+        }
+
+        if (pending) {
+          await authCacheService.setPending(normalizedSender, pending, 60);
+        }
       }
 
       return `Akun Anda belum terdaftar.\nKode registrasi: ${pending.code}\nHubungi admin untuk aktivasi.`;
-    } else if (user.isActive === false ) {
+    } else if (user.isActive === false) {
       return "Akun Anda dinonaktifkan. Hubungi admin untuk bantuan.";
     }
 
@@ -68,6 +85,7 @@ function createCommandRouter({ fleetService, userRepository, auditRepository, lo
         match,
         user,
         sender: normalizedSender,
+        authCacheService,
         services,
         repositories,
         utils,
