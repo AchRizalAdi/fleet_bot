@@ -56,17 +56,6 @@ function createBaileysAdapter({ logger, commandRouter, enabled, authDir }) {
 
         const text = msg.message.conversation || msg.message.extendedTextMessage?.text || msg.message.imageMessage?.caption || "";
 
-        logger.info(
-          {
-            remoteJid: msg.key.remoteJid,
-            participant: msg.key.participant,
-            sender,
-            replyTo,
-            text,
-          },
-          "Incoming WhatsApp message",
-        );
-
         const reply = await commandRouter.handleIncoming({ sender, replyTo, text });
 
         if (reply && replyTo) {

@@ -12,14 +12,50 @@ const { createBaileysAdapter } = require("../adapters/whatsapp/baileysAdapter");
 const { getRedisClient } = require("../lib/redisClient");
 const { createAuthCacheService } = require("../services/authCacheService");
 
+function createHealthService({ redis, apiClient, backendHealthPath }) {
+  return {
+    async getHealth() {
+      const [redisConnected, backendConnected] = await Promise.all([
+        redis
+          .ping()
+          .then(() => true)
+          .catch(() => false),
+        apiClient
+          .healthCheck(backendHealthPath)
+          .then((ok) => ok)
+          .catch(() => false),
+      ]);
+
+      const checks = {
+        redis: redisConnected ? "connected" : "disconnected",
+        backend: backendConnected ? "connected" : "disconnected",
+      };
+
+      return {
+        status: redisConnected && backendConnected ? "ok" : "degraded",
+        service: "fleet-wa-bot",
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString(),
+        checks,
+      };
+    },
+  };
+}
+
 async function createApp() {
   const logger = createLogger();
 
   const redis = await getRedisClient(logger);
-  const authCacheService = createAuthCacheService({ redis });
+  const authCacheService = createAuthCacheService({ redis, logger });
 
   // Initialize API Client
   const apiClient = createApiClient({ env, logger });
+
+  const healthService = createHealthService({
+    redis,
+    apiClient,
+    backendHealthPath: env.BACKEND_HEALTH_PATH,
+  });
 
   // Initialize Repositories
   const fleetRepository = createFleetRepository({ apiClient, logger });
@@ -60,7 +96,7 @@ async function createApp() {
     sendImage,
   });
 
-  const httpServer = buildHttpServer({ logger });
+  const httpServer = buildHttpServer({ healthService });
 
   whatsapp = createBaileysAdapter({
     logger,

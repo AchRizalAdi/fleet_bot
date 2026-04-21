@@ -26,6 +26,7 @@ const env = {
     .filter(Boolean),
   ALERT_TARGET: getRequiredString("ALERT_TARGET", ""),
   ALERT_CRON: getRequiredString("ALERT_CRON", "0 8 * * *"),
+  BACKEND_HEALTH_PATH: getRequiredString("BACKEND_HEALTH_PATH", "/api/health"),
   TMS_API_BASE_URL: getRequiredString("TMS_API_BASE_URL", "http://tms.cakraindo.com:7011"),
   TMS_API_KEY: getRequiredString("TMS_API_KEY", ""),
   REDIS_HOST: process.env.REDIS_HOST || "127.0.0.1",

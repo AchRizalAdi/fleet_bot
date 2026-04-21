@@ -40,9 +40,17 @@ function createCommandRouter({ fleetService, userRepository, auditRepository, au
     const message = normalizeMessage(text);
     const upper = message.toUpperCase();
 
+    logger.info({ sender: normalizedSender, replyTo, text: message }, "Incoming WhatsApp message");
+
     if (!message) return null;
 
     let user = await authCacheService.getAuth(normalizedSender);
+
+    if (user) {
+      logger.info({ sender: normalizedSender }, "Auth cache hit");
+    } else {
+      logger.info({ sender: normalizedSender }, "Auth cache miss");
+    }
 
     if (!user) {
       user = await userRepository.findUserByJid(normalizedSender);
@@ -54,6 +62,12 @@ function createCommandRouter({ fleetService, userRepository, auditRepository, au
 
     if (!user) {
       let pending = await authCacheService.getPending(normalizedSender);
+
+      if (pending) {
+        logger.info({ sender: normalizedSender }, "Pending cache hit");
+      } else {
+        logger.info({ sender: normalizedSender }, "Pending cache miss");
+      }
 
       if (!pending) {
         pending = await userRepository.findPendingByJid(normalizedSender);
@@ -77,21 +91,31 @@ function createCommandRouter({ fleetService, userRepository, auditRepository, au
       const match = upper.match(command.pattern);
       if (!match) continue;
 
+      logger.info({ sender: normalizedSender, command: command.name }, "Command matched");
+
       if (user.role !== 'SUPERADMIN' && command.permission && !user.permissions.includes(command.permission)) {
         return "Tidak punya akses.";
       }
-    
-      return command.execute({
-        match,
-        user,
-        sender: normalizedSender,
-        authCacheService,
-        services,
-        repositories,
-        utils,
-        sendText,
-        logger,
-      });
+
+      try {
+        const result = await command.execute({
+          match,
+          user,
+          sender: normalizedSender,
+          authCacheService,
+          services,
+          repositories,
+          utils,
+          sendText,
+          logger,
+        });
+
+        logger.info({ sender: normalizedSender, command: command.name }, "Command executed successfully");
+        return result;
+      } catch (err) {
+        logger.error({ sender: normalizedSender, command: command.name, err }, "Command execution failed");
+        throw err;
+      }
     }
 
     const primaryLogoPath = path.join(process.cwd(), "assets", "logo-cakra.jpg");

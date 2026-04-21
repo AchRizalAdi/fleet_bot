@@ -70,6 +70,23 @@ function createApiClient({ env, logger }) {
   }
 
   return {
+    async healthCheck(path) {
+      try {
+        const response = await fetch(`${baseUrl}${path}`, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey,
+          },
+        });
+
+        return response.ok;
+      } catch (error) {
+        return false;
+      }
+    },
+
     async get(path) {
       return request({ method: 'GET', path });
     },
