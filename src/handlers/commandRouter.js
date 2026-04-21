@@ -4,7 +4,6 @@ const { normalizeMessage } = require("../utils/normalizeMessage");
 const { normalizeSender } = require("../utils/sender");
 const {
   formatDefaultReply,
-  formatDefaultReplyShortVer,
   formatUserActivatedMessage,
   formatRegistrationPending,
   formatAccountDisabled,
@@ -35,7 +34,6 @@ function createCommandRouter({ fleetService, userRepository, auditRepository, au
   const repositories = { userRepository, auditRepository };
   const utils = {
     formatDefaultReply,
-    formatDefaultReplyShortVer,
     formatUserActivatedMessage,
     formatRegistrationPending,
     formatAccountDisabled,
@@ -46,11 +44,24 @@ function createCommandRouter({ fleetService, userRepository, auditRepository, au
   async function handleIncoming({ sender, replyTo, text }) {
     const normalizedSender = normalizeJid(sender);
     const message = normalizeMessage(text);
-    const upper = message.toUpperCase();
-
-    logger.info({ sender: normalizedSender, replyTo, text: message }, "Incoming WhatsApp message");
 
     if (!message) return null;
+
+    const trigger = "CIMI";
+    const upper = message.toUpperCase();
+
+    // Only respond if message starts with CIMI
+    if (!upper.startsWith(trigger)) {
+      logger.info({ sender: normalizedSender, text: message }, "Message ignored: missing CIMI trigger");
+      return null;
+    }
+
+    // Remove CIMI from the message before further processing
+    const commandText = message.slice(trigger.length).trim();
+    const normalizedCommand = normalizeMessage(commandText);
+    const upperCommand = normalizedCommand.toUpperCase();
+
+    logger.info({ sender: normalizedSender, replyTo, text: normalizedCommand }, "Incoming WhatsApp message");
 
     let user = await authCacheService.getAuth(normalizedSender);
 
@@ -96,12 +107,12 @@ function createCommandRouter({ fleetService, userRepository, auditRepository, au
     }
 
     for (const command of commandModules) {
-      const match = upper.match(command.pattern);
+      const match = upperCommand.match(command.pattern);
       if (!match) continue;
 
       logger.info({ sender: normalizedSender, command: command.name }, "Command matched");
 
-      if (user.role !== 'SUPERADMIN' && command.permission && !user.permissions.includes(command.permission)) {
+      if (user.role !== "SUPERADMIN" && command.permission && !user.permissions.includes(command.permission)) {
         return formatNoAccess();
       }
 
@@ -131,11 +142,11 @@ function createCommandRouter({ fleetService, userRepository, auditRepository, au
     const logoPath = fs.existsSync(primaryLogoPath) ? primaryLogoPath : fallbackLogoPath;
 
     if (sendImage && replyTo && fs.existsSync(logoPath)) {
-      await sendImage(replyTo, logoPath, formatDefaultReplyShortVer({ user }));
+      await sendImage(replyTo, logoPath, formatDefaultReply({ user }));
       return null;
     }
 
-    return formatDefaultReplyShortVer({ user });
+    return formatDefaultReply({ user });
   }
 
   return { handleIncoming };
