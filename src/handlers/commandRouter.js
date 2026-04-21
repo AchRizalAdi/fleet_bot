@@ -77,10 +77,10 @@ function createCommandRouter({ fleetService, userRepository, auditRepository, au
       const match = upper.match(command.pattern);
       if (!match) continue;
 
-      // if (!canExecute(user.role, command.permission)) {
-      //   return "Tidak punya akses.";
-      // }
-
+      if (user.role !== 'SUPERADMIN' && command.permission && !user.permissions.includes(command.permission)) {
+        return "Tidak punya akses.";
+      }
+    
       return command.execute({
         match,
         user,
