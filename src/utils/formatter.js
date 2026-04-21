@@ -3,7 +3,7 @@ function formatDefaultReply({ user }) {
 
   const lines = [];
 
-  lines.push("CIMI ASSISTANT");
+  lines.push("*CIMI ASSISTANT*");
   lines.push("");
   lines.push(`Selamat datang di CIMI Assistant, ${name || "Pengguna"}.`);
   lines.push("");
@@ -11,7 +11,6 @@ function formatDefaultReply({ user }) {
   lines.push("INFORMASI AKUN");
   lines.push(`Nama : ${name || "-"}`);
   lines.push(`Role : ${role?.toUpperCase() || "-"}`);
-  lines.push("");
 
   lines.push("");
   lines.push("Ketik *HELP* untuk daftar perintah.");

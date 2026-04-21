@@ -1,27 +1,52 @@
-function formatHelp(role = "viewer") {
-  const lines = ["FLEET OPS BOT", "", "DAFTAR COMMAND"];
+function formatHelp(permissions = []) {
+  const permissionSet = new Set(permissions);
 
-  lines.push("");
-  lines.push("CEK DATA");
-  lines.push("- CEK SURAT <PLAT>");
-  lines.push("- CEK STOCK BAN <SKU>");
-  lines.push("- ALERT HARI INI");
+  const sections = [
+    {
+      title: "HELP COMMAND",
+      groupPermission: "H_COM",
+      commands: [
+        { permission: "HELP", text: "HELP" },
+        { permission: "AUDIT_LOG", text: "AUDIT LOG" },
+      ],
+    },
+    {
+      title: "USER MANAGEMENT",
+      groupPermission: "U_MAN",
+      commands: [
+        { permission: "LIST_PENDING_USER", text: "LIST PENDING USER" },
+        { permission: "APPROVE_USER", text: "APPROVE USER <CODE> <ROLES/SUPERADMIN/USER> <NAMA>" },
+        { permission: "REJECT_USER", text: "REJECT USER <CODE>" },
+      ],
+    },
+    {
+      title: "VEHICLE MANAGEMENT",
+      groupPermission: "V_MAN",
+      commands: [
+        { permission: "CEK_SURAT", text: "CEK SURAT <PLAT>" },
+        { permission: "CEK_STOCK_BAN", text: "CEK STOCK BAN <SKU>" },
+        { permission: "ALERT_HARI_INI", text: "ALERT HARI INI" },
+      ],
+    },
+  ];
 
-  if (role === "operator" || role === "admin") {
+  const lines = ["*FITUR BESERTA FORMAT PERINTAH*"];
+
+  for (const section of sections) {
+    if (!permissionSet.has(section.groupPermission)) continue;
+
+    const allowedCommands = section.commands.filter((command) =>
+      permissionSet.has(command.permission)
+    );
+
+    if (allowedCommands.length === 0) continue;
+
     lines.push("");
-    lines.push("UPDATE DATA");
-    lines.push("- UPDATE SURAT <PLAT> <JENIS> <YYYY-MM-DD>");
-    lines.push("- UPDATE BAN <PLAT> <POSISI> <KM>");
-  }
+    lines.push(`*${section.title}*`);
 
-  if (role === "admin") {
-    lines.push("");
-    lines.push("ADMIN");
-    lines.push("- LIST PENDING USER");
-    lines.push("- APPROVE <CODE> <ROLE> <NAMA>");
-    lines.push("- REJECT <CODE>");
-    lines.push("- LOG TERAKHIR");
-    lines.push("  (ROLE: VIEWER, OPERATOR, ADMIN)");
+    for (const command of allowedCommands) {
+      lines.push(`- ${command.text}`);
+    }
   }
 
   lines.push("");
@@ -33,8 +58,8 @@ function formatHelp(role = "viewer") {
 module.exports = {
   name: "HELP",
   permission: "HELP",
-  pattern: /^HELP$/,
+  pattern: /^HELP$/i,
   async execute({ user }) {
-    return formatHelp(user.role);
+    return formatHelp(user.permissions);
   },
 };
