@@ -24,6 +24,11 @@ function createAuthCacheService({ redis, logger }) {
       try {
         const key = getAuthKey(jid);
         const raw = await redis.get(key);
+        if (raw) {
+          console.log("CACHE HIT:", key);
+        } else {
+          console.log("CACHE MISS:", key);
+        }
         return raw ? safeParse(raw, logger, key) : null;
       } catch (err) {
         logger?.error({ err, jid }, "Redis getAuth failed");
