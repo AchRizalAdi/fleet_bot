@@ -2,6 +2,8 @@
  * User Repository - Calls Laravel API for user management
  */
 
+const { permission } = require("../handlers/commands/helpCommand");
+
 function normalizeJid(jid) {
   return String(jid || '').trim().toLowerCase();
 }
@@ -37,6 +39,7 @@ function createUserRepository({ apiClient, logger }) {
             name: response.data.name,
             role: response.data.role_name,
             isActive: response.data.is_active === '1' ? true : false,
+            permission: response.data.permission || [],
           };
         }
 
