@@ -32,14 +32,14 @@ function createUserRepository({ apiClient, logger }) {
           jid,
           number,
         });
-
+        
         if (response?.data && response.data.is_active) {
           return {
             jid: response.data.jid,
             name: response.data.name,
             role: response.data.role_name,
             isActive: response.data.is_active === '1' ? true : false,
-            permission: response.data.permission || [],
+            permissions: response.data.permissions || [],
           };
         }
 
