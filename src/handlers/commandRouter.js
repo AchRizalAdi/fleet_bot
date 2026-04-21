@@ -2,7 +2,15 @@ const fs = require("fs");
 const path = require("path");
 const { normalizeMessage } = require("../utils/normalizeMessage");
 const { normalizeSender } = require("../utils/sender");
-const { formatHelp, formatDocumentStatus, formatTireStock, formatAlertSummary, formatDefaultReply, formatDefaultReplyShortVer, formatUserActivatedMessage } = require("../utils/formatter");
+const {
+  formatDefaultReply,
+  formatDefaultReplyShortVer,
+  formatUserActivatedMessage,
+  formatRegistrationPending,
+  formatAccountDisabled,
+  formatNoAccess,
+  formatGenericSystemError,
+} = require("../utils/formatter");
 // const { canExecute } = require("../config/permissions");
 
 const commandModules = [
@@ -26,13 +34,13 @@ function createCommandRouter({ fleetService, userRepository, auditRepository, au
   const services = { fleetService, authCacheService };
   const repositories = { userRepository, auditRepository };
   const utils = {
-    formatHelp,
-    formatDocumentStatus,
-    formatTireStock,
-    formatAlertSummary,
     formatDefaultReply,
     formatDefaultReplyShortVer,
     formatUserActivatedMessage,
+    formatRegistrationPending,
+    formatAccountDisabled,
+    formatNoAccess,
+    formatGenericSystemError,
   };
 
   async function handleIncoming({ sender, replyTo, text }) {
@@ -82,9 +90,9 @@ function createCommandRouter({ fleetService, userRepository, auditRepository, au
         }
       }
 
-      return `Akun Anda belum terdaftar.\nKode registrasi: ${pending.code}\nHubungi admin untuk aktivasi.`;
+      return formatRegistrationPending({ code: pending.code });
     } else if (user.isActive === false) {
-      return "Akun Anda dinonaktifkan. Hubungi admin untuk bantuan.";
+      return formatAccountDisabled();
     }
 
     for (const command of commandModules) {
@@ -94,7 +102,7 @@ function createCommandRouter({ fleetService, userRepository, auditRepository, au
       logger.info({ sender: normalizedSender, command: command.name }, "Command matched");
 
       if (user.role !== 'SUPERADMIN' && command.permission && !user.permissions.includes(command.permission)) {
-        return "Tidak punya akses.";
+        return formatNoAccess();
       }
 
       try {
