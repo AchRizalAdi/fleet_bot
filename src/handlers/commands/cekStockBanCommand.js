@@ -4,10 +4,11 @@ function formatTireStock(stock) {
   return stock
     .map((stock, i) => {
       return [
-        `📦 *STOK #${i + 1}*`,
-        `🔹 ${stock.item_name}`,
-        `🏢 ${stock.warehouse_name}`,
-        `📊 ${stock.available_qty} / Min ${stock.minimal_stock}`,
+        // `STOK #${i + 1}`,
+        `📦`,
+        `Gudang    : ${stock.warehouse_name}`,
+        `Item      : ${stock.item_name}`,
+        `Tersedia  : ${stock.available_qty}`,
         ``,
       ].join("\n");
     })
