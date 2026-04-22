@@ -7,25 +7,31 @@ function isUser(jid) {
 }
 
 function isAllowed({ sender, replyTo, env }) {
-  const senderNormalized = sender.toLowerCase();
-  const chatNormalized = (replyTo || sender).toLowerCase();
+  const senderNormalized = String(sender || "").toLowerCase();
+  const chatNormalized = String(replyTo || sender || "").toLowerCase();
 
   // ===== GROUP =====
   if (isGroup(chatNormalized)) {
-    if (!env.ALLOW_GROUP) return false;
+    if (env.ALLOWED_GROUPS.length > 0) {
+      if (env.ALLOWED_GROUPS.includes(chatNormalized)) {
+        return true;
+      }
+      return false;
+    }
 
-    if (env.ALLOWED_GROUPS.length === 0) return true;
-
-    return env.ALLOWED_GROUPS.includes(chatNormalized);
+    return env.ALLOW_GROUP === true;
   }
 
   // ===== PERSONAL =====
   if (isUser(senderNormalized)) {
-    if (!env.ALLOW_PERSONAL) return false;
+    if (env.ALLOWED_USERS.length > 0) {
+      if (env.ALLOWED_USERS.includes(senderNormalized)) {
+        return true;
+      }
+      return false;
+    }
 
-    if (env.ALLOWED_USERS.length === 0) return true;
-
-    return env.ALLOWED_USERS.includes(senderNormalized);
+    return env.ALLOW_PERSONAL === true;
   }
 
   return false;
