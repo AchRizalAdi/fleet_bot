@@ -4,6 +4,7 @@ const { normalizeMessage } = require("../utils/normalizeMessage");
 const { normalizeSender } = require("../utils/sender");
 const { formatDefaultReply, formatUserActivatedMessage, formatRegistrationPending, formatAccountDisabled, formatNoAccess, formatGenericSystemError } = require("../utils/formatter");
 const { isAllowed } = require("../utils/accessControl");
+const { env } = require("../config/env");
 
 const commandModules = [
   require("./commands/helpCommand"),
@@ -40,7 +41,7 @@ function createCommandRouter({ fleetService, userRepository, auditRepository, au
 
     if (!message) return null;
 
-    if (!isAllowed({ sender: normalizedSender, replyTo })) {
+    if (!isAllowed({ sender: normalizedSender, replyTo, env })) {
       logger.warn(
         {
           sender: normalizedSender,
