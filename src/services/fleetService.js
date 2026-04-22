@@ -10,7 +10,7 @@ function createFleetService({ repository, logger }) {
     },
 
     async getTireStock(sku) {
-      return repository.findTireStockBySku(sku);
+      return repository.findTireStock(sku);
     },
 
     async updateTireUsage({ plate, position, km, actor }) {

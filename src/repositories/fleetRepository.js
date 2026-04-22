@@ -22,7 +22,7 @@ function createFleetRepository({ apiClient, logger }) {
           status: response.vehicle.status,
         };
       } catch (error) {
-        logger.error({ error: error.message, plate }, 'Failed to fetch vehicle documents');
+        logger.error({ error: error.message, plate }, "Failed to fetch vehicle documents");
         return null;
       }
     },
@@ -33,7 +33,7 @@ function createFleetRepository({ apiClient, logger }) {
      */
     async updateVehicleDocument({ plate, type, expiryDate, actor }) {
       try {
-        const response = await apiClient.post('/api/wa-bot/fleet/vehicle-documents/update', {
+        const response = await apiClient.post("/api/wa-bot/fleet/vehicle-documents/update", {
           plate,
           type,
           expiry_date: expiryDate,
@@ -50,7 +50,7 @@ function createFleetRepository({ apiClient, logger }) {
           status: response.vehicle.status,
         };
       } catch (error) {
-        logger.error({ error: error.message, plate, type }, 'Failed to update vehicle document');
+        logger.error({ error: error.message, plate, type }, "Failed to update vehicle document");
         return null;
       }
     },
@@ -59,22 +59,17 @@ function createFleetRepository({ apiClient, logger }) {
      * Get tire stock by SKU
      * GET /api/wa-bot/fleet/tire-stock/{sku}
      */
-    async findTireStockBySku(sku) {
+    async findTireStock(sku = null) {
       try {
-        const response = await apiClient.get(`/api/wa-bot/fleet/tire-stock/${sku.toUpperCase()}`);
+        const response = await apiClient.post(`/api/wa-bot/vehicle/tire_stock`, { sku });
 
-        if (!response?.tire) {
+        if (!response?.data) {
           return null;
         }
 
-        return {
-          sku: response.tire.sku,
-          brand: response.tire.brand,
-          available: response.tire.available,
-          minimum: response.tire.minimum,
-        };
+        return response.data;
       } catch (error) {
-        logger.error({ error: error.message, sku }, 'Failed to fetch tire stock');
+        logger.error({ error: error.message, sku }, "Failed to fetch tire stock");
         return null;
       }
     },
@@ -85,7 +80,7 @@ function createFleetRepository({ apiClient, logger }) {
      */
     async updateTireUsage({ plate, position, km, actor }) {
       try {
-        const response = await apiClient.post('/api/wa-bot/fleet/tire-usage/update', {
+        const response = await apiClient.post("/api/wa-bot/fleet/tire-usage/update", {
           plate,
           position,
           km,
@@ -94,7 +89,7 @@ function createFleetRepository({ apiClient, logger }) {
 
         return { ok: response?.ok !== false };
       } catch (error) {
-        logger.error({ error: error.message, plate, position }, 'Failed to update tire usage');
+        logger.error({ error: error.message, plate, position }, "Failed to update tire usage");
         return { ok: false };
       }
     },
@@ -105,10 +100,10 @@ function createFleetRepository({ apiClient, logger }) {
      */
     async getTodayAlerts() {
       try {
-        const response = await apiClient.get('/api/wa-bot/vehicle/notification');
+        const response = await apiClient.get("/api/wa-bot/vehicle/notification");
         return Array.isArray(response?.data) ? response.data : [];
       } catch (error) {
-        logger.error({ error: error.message }, 'Failed to fetch today alerts');
+        logger.error({ error: error.message }, "Failed to fetch today alerts");
         return [];
       }
     },
