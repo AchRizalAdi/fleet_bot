@@ -40,7 +40,7 @@ function createCommandRouter({ fleetService, userRepository, auditRepository, au
 
     if (!message) return null;
 
-    if (!isAllowed({ sender: normalizedSender, replyTo, env })) {
+    if (!isAllowed({ sender: normalizedSender, replyTo })) {
       logger.warn(
         {
           sender: normalizedSender,
