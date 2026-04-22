@@ -15,8 +15,31 @@ function createApiClient({ env, logger }) {
     throw new Error('TMS_API_KEY is required');
   }
 
+  function buildSafeRequestMeta(body) {
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return undefined;
+    }
+
+    // Keep request metadata compact and avoid logging sensitive values.
+    return {
+      bodyKeys: Object.keys(body).slice(0, 10),
+    };
+  }
+
   async function request({ method = 'GET', path, body = null, headers = {} }) {
+    const normalizedMethod = String(method || 'GET').toUpperCase();
     const url = `${baseUrl}${path}`;
+    const start = Date.now();
+    const requestMeta = buildSafeRequestMeta(body);
+
+    logger.info(
+      {
+        method: normalizedMethod,
+        endpoint: path,
+        ...(requestMeta ? { request: requestMeta } : {}),
+      },
+      'API request started'
+    );
 
     const requestHeaders = {
       'Accept': 'application/json',
@@ -26,7 +49,7 @@ function createApiClient({ env, logger }) {
     };
 
     const options = {
-      method,
+      method: normalizedMethod,
       headers: requestHeaders,
     };
 
@@ -39,38 +62,82 @@ function createApiClient({ env, logger }) {
 
       if (!response.ok) {
         const errorText = await response.text();
+        const apiError = new Error(`API Error: ${response.status} ${response.statusText}`);
+
         logger.error(
           {
-            status: response.status,
-            statusText: response.statusText,
-            url,
-            method,
-            errorBody: errorText,
+            method: normalizedMethod,
+            endpoint: path,
+            statusCode: response.status,
+            duration: Date.now() - start,
+            responseError: errorText ? errorText.slice(0, 300) : undefined,
+            err: apiError,
           },
-          `API Error: ${response.status} ${response.statusText}`
+          'API request failed'
         );
-        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+
+        throw apiError;
       }
 
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
-        logger.warn({ contentType, url }, 'Response is not JSON');
+        logger.warn(
+          {
+            method: normalizedMethod,
+            endpoint: path,
+            statusCode: response.status,
+            duration: Date.now() - start,
+            contentType,
+          },
+          'API response is not JSON'
+        );
         return null;
       }
 
       const data = await response.json();
+
+      logger.info(
+        {
+          method: normalizedMethod,
+          endpoint: path,
+          statusCode: response.status,
+          duration: Date.now() - start,
+        },
+        'API request success'
+      );
+
       return data;
     } catch (error) {
       if (error instanceof Error && error.message.startsWith('API Error:')) {
         throw error;
       }
-      logger.error({ error: error.message, url, method }, 'Request failed');
+
+      logger.error(
+        {
+          method: normalizedMethod,
+          endpoint: path,
+          duration: Date.now() - start,
+          err: error,
+        },
+        'API request failed'
+      );
+
       throw new Error(`Failed to reach API: ${error.message}`);
     }
   }
 
   return {
     async healthCheck(path) {
+      const start = Date.now();
+
+      logger.info(
+        {
+          method: 'GET',
+          endpoint: path,
+        },
+        'API request started'
+      );
+
       try {
         const response = await fetch(`${baseUrl}${path}`, {
           method: 'GET',
@@ -81,8 +148,28 @@ function createApiClient({ env, logger }) {
           },
         });
 
+        logger.info(
+          {
+            method: 'GET',
+            endpoint: path,
+            statusCode: response.status,
+            duration: Date.now() - start,
+          },
+          'API request success'
+        );
+
         return response.ok;
       } catch (error) {
+        logger.error(
+          {
+            method: 'GET',
+            endpoint: path,
+            duration: Date.now() - start,
+            err: error,
+          },
+          'API request failed'
+        );
+
         return false;
       }
     },
