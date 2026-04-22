@@ -105,24 +105,10 @@ function createFleetRepository({ apiClient, logger }) {
      */
     async getTodayAlerts() {
       try {
-        const response = await apiClient.get('/api/wa-bot/fleet/alerts/today');
-        return Array.isArray(response?.alerts) ? response.alerts : [];
+        const response = await apiClient.get('/api/wa-bot/vehicle/notification');
+        return Array.isArray(response?.data) ? response.data : [];
       } catch (error) {
         logger.error({ error: error.message }, 'Failed to fetch today alerts');
-        return [];
-      }
-    },
-
-    /**
-     * Fetch notifications from TMS
-     * GET /api/shared/notification
-     */
-    async fetchNotifications() {
-      try {
-        const response = await apiClient.get('/api/shared/notification');
-        return Array.isArray(response) ? response : [];
-      } catch (error) {
-        logger.error({ error: error.message }, 'Failed to fetch notifications');
         return [];
       }
     },

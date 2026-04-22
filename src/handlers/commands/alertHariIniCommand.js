@@ -7,17 +7,23 @@ function formatAlertSummary(items) {
     return ["ALERT HARI INI", "", "Tidak ada alert."].join("\n");
   }
 
-  const limited = items.slice(0, 10);
+  const limited = items.slice(0, 20);
   const lines = ["ALERT HARI INI", ""];
 
-  limited.forEach((alert, idx) => {
-    lines.push(`${idx + 1}. ${alert.nopol}`);
-    lines.push(`Tipe: ${alert.title}`);
-    if (alert.notification_created_at) {
-      lines.push(`Waktu: ${alert.notification_created_at}`);
+  limited.forEach((items, idx) => {
+    lines.push(`${idx + 1}. ${items.nopol}`);
+    lines.push(`Tipe: ${items.type || "-"}`);
+    lines.push(`Judul: ${items.title || "-"}`);
+    lines.push(`Pesan: ${items.notification_message || "-"}`);
+    if (items.notification_created_at) {
+      lines.push(`Waktu: ${items.notification_created_at}`);
     }
-    if (alert.customer_name) {
-      lines.push(`Customer: ${alert.customer_name}`);
+    if (items.customer_name) {
+      lines.push(`Customer: ${items.customer_name}`);
+    }
+    // posisi use gmaps link    
+    if (items.notif_lat && items.notif_lng) {
+      lines.push(`Posisi: https://www.google.com/maps/search/?api=1&query=${items.notif_lat},${items.notif_lng}`);
     }
     lines.push("");
   });
