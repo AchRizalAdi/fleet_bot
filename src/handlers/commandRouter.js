@@ -2,15 +2,8 @@ const fs = require("fs");
 const path = require("path");
 const { normalizeMessage } = require("../utils/normalizeMessage");
 const { normalizeSender } = require("../utils/sender");
-const {
-  formatDefaultReply,
-  formatUserActivatedMessage,
-  formatRegistrationPending,
-  formatAccountDisabled,
-  formatNoAccess,
-  formatGenericSystemError,
-} = require("../utils/formatter");
-// const { canExecute } = require("../config/permissions");
+const { formatDefaultReply, formatUserActivatedMessage, formatRegistrationPending, formatAccountDisabled, formatNoAccess, formatGenericSystemError } = require("../utils/formatter");
+const { isAllowed } = require("../utils/accessControl");
 
 const commandModules = [
   require("./commands/helpCommand"),
@@ -46,6 +39,18 @@ function createCommandRouter({ fleetService, userRepository, auditRepository, au
     const message = normalizeMessage(text);
 
     if (!message) return null;
+
+    if (!isAllowed({ sender: normalizedSender, replyTo, env })) {
+      logger.warn(
+        {
+          sender: normalizedSender,
+          replyTo,
+        },
+        "Blocked message (not allowed)",
+      );
+
+      return null; // silent ignore
+    }
 
     const trigger = "CIMI";
     const upper = message.toUpperCase();

@@ -13,6 +13,11 @@ function getNumber(name, fallback) {
   return raw ? Number(raw) : fallback;
 }
 
+function parseList(value) {
+  if (!value) return [];
+  return value.split(",").map(v => v.trim().toLowerCase());
+}
+
 const env = {
   NODE_ENV: getRequiredString("NODE_ENV", "development"),
   APP_PORT: getNumber("APP_PORT", 3000),
@@ -36,6 +41,10 @@ const env = {
   NODE_ENV: process.env.NODE_ENV || "development",
   LOG_LEVEL: process.env.LOG_LEVEL || "info",
   LOG_FILE_PATH: process.env.LOG_FILE_PATH || "/app/logs/app.log",
+  ALLOW_PERSONAL: process.env.ALLOW_PERSONAL === "true",
+  ALLOW_GROUP: process.env.ALLOW_GROUP === "true",
+  ALLOWED_USERS: parseList(process.env.ALLOWED_USERS),
+  ALLOWED_GROUPS: parseList(process.env.ALLOWED_GROUPS),
 };
 
 module.exports = { env };
