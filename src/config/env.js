@@ -33,6 +33,9 @@ const env = {
   REDIS_PORT: Number(process.env.REDIS_PORT || 6379),
   REDIS_PASSWORD: process.env.REDIS_PASSWORD || "",
   REDIS_DB: Number(process.env.REDIS_DB || 0),
+  NODE_ENV: process.env.NODE_ENV || "development",
+  LOG_LEVEL: process.env.LOG_LEVEL || "info",
+  LOG_FILE_PATH: process.env.LOG_FILE_PATH || "/app/logs/app.log",
 };
 
 module.exports = { env };
