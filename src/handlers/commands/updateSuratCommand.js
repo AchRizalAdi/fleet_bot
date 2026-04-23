@@ -120,7 +120,8 @@ module.exports = {
     if (!plate) {
       return "Format salah. Contoh: UPDATE SURAT B 2424 BK";
     }
-    console.log("Received UPDATE SURAT command for plate:", plate);
+    // console.log("Received UPDATE SURAT command for plate:", plate);
+    logger.info({ sender, plate }, "Received UPDATE SURAT command");
     const vehicles = await services.fleetService.getVehicleDocuments({ nopol: plate });
     const vehicle = Array.isArray(vehicles) ? vehicles[0] : null;
 

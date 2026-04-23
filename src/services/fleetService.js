@@ -1,7 +1,8 @@
 function createFleetService({ repository, logger }) {
   return {
     async getVehicleDocuments(params = {}) {
-      console.log("Fetching vehicle documents with params:", params);
+      // console.log("Fetching vehicle documents with params:", params);
+      logger.info({ params }, "Fetching vehicle documents");
       return repository.findVehicleDocuments(params);
     },
 
