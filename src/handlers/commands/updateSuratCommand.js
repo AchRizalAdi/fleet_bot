@@ -113,7 +113,7 @@ module.exports = {
   name: "UPDATE_SURAT",
   permission: "UPDATE_SURAT",
   pattern: /^UPDATE SURAT\s+(.+)$/,
-  async execute({ match, sender, replyTo, services }) {
+  async execute({ match, sender, replyTo, services, logger }) {
     const rawPlate = match[1] || "";
     const plate = String(rawPlate).trim().replace(/\s+/g, " ").toUpperCase();
 
