@@ -1,7 +1,7 @@
 function createFleetService({ repository, logger }) {
   return {
-    async getVehicleDocuments(data) {
-      return repository.findVehicleDocuments(data);
+    async getVehicleDocuments(params = {}) {
+      return repository.findVehicleDocuments(params);
     },
 
     async updateVehicleDocument({ plate, type, expiryDate, actor }) {
