@@ -24,6 +24,7 @@ function formatHelp(permissions = []) {
       groupPermission: "V_MAN",
       commands: [
         { permission: "CEK_SURAT", text: "CEK SURAT" },
+        { permission: "UPDATE_SURAT", text: "UPDATE SURAT <PLAT>" },
         { permission: "CEK_STOCK_BAN", text: "CEK STOCK BAN" },
         { permission: "ALERT_HARI_INI", text: "ALERT HARI INI" },
       ],
