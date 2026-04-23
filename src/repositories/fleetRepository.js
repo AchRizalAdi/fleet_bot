@@ -3,6 +3,11 @@
  */
 
 function createFleetRepository({ apiClient, logger }) {
+  function extractStatusCode(error) {
+    const match = String(error?.message || "").match(/API Error:\s*(\d{3})/i);
+    return match ? Number(match[1]) : null;
+  }
+
   return {
     /**
      * Get vehicle documents by plate
@@ -10,10 +15,8 @@ function createFleetRepository({ apiClient, logger }) {
      */
     async findVehicleDocuments(params = {}) {
       try {
-        // console.log("API Client is making request to fetch vehicle documents with params:", params);
-        logger.info({ params }, "Fetching vehicle documents from API");
         const response = await apiClient.post(`/api/wa-bot/vehicle/document`, params);
-        logger.info({ responseData: response?.data, params }, "Received response for vehicle documents");
+
         if (!response?.data) {
           return null;
         }
@@ -25,31 +28,33 @@ function createFleetRepository({ apiClient, logger }) {
       }
     },
 
-    /**
-     * Update vehicle document
-     * POST /api/wa-bot/fleet/vehicle-documents/update
-     */
-    async updateVehicleDocument({ plate, type, expiryDate, actor }) {
+    async updateVehicleDocumentByVehicleId(vehicleId, payload = {}) {
       try {
-        const response = await apiClient.post("/api/wa-bot/fleet/vehicle-documents/update", {
-          plate,
-          type,
-          expiry_date: expiryDate,
-          actor,
-        });
+        const response = await apiClient.post(`/api/wa-bot/vehicle/update-document/${vehicleId}`, payload);
 
-        if (!response?.vehicle) {
-          return null;
+        if (response?.status === "error") {
+          return {
+            ok: false,
+            notFound: /not found/i.test(String(response?.message || "")),
+            message: response?.message || "Update vehicle document failed.",
+          };
         }
 
         return {
-          plate: response.vehicle.plate,
-          documents: response.vehicle.documents || {},
-          status: response.vehicle.status,
+          ok: true,
+          message: response?.message || "Vehicle document updated successfully.",
         };
       } catch (error) {
-        logger.error({ error: error.message, plate, type }, "Failed to update vehicle document");
-        return null;
+        const statusCode = extractStatusCode(error);
+        const notFound = statusCode === 404 || /vehicle not found/i.test(String(error?.message || ""));
+
+        logger.error({ error: error.message, vehicleId, payload }, "Failed to update vehicle document by vehicle id");
+        return {
+          ok: false,
+          notFound,
+          backendUnavailable: !notFound,
+          message: notFound ? "Vehicle not found." : "Backend unavailable.",
+        };
       }
     },
 

@@ -122,7 +122,7 @@ module.exports = {
     }
     // console.log("Received UPDATE SURAT command for plate:", plate);
     logger.info({ sender, plate }, "Received UPDATE SURAT command");
-    const vehicles = await services.fleetService.getVehicleDocuments({ nopol: plate });
+    const vehicles = await services.fleetService.getVehicleDocuments(plate);
     const vehicle = Array.isArray(vehicles) ? vehicles[0] : null;
 
     if (!vehicle) {
@@ -137,6 +137,7 @@ module.exports = {
         step: "WAITING_DOCUMENT_SELECTION",
         data: {
           plate: vehicle.nopol || plate,
+          vehicleId: vehicle.id,
           vehicle,
         },
       },

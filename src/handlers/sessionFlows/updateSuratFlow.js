@@ -187,6 +187,7 @@ async function handleWaitExpiryDate({ session, sender, replyTo, text, sessionSer
 
   const vehicle = session.data.vehicle || {};
   const plate = vehicle.nopol || session.data.plate;
+  const vehicleId = session.data.vehicleId || vehicle.id;
   const documentLabel = session.data.selectedDocument;
   const document = resolveDocumentBySelection(session, documentLabel);
 
@@ -196,12 +197,25 @@ async function handleWaitExpiryDate({ session, sender, replyTo, text, sessionSer
     return formatGenericSessionError();
   }
 
-  await fleetService.updateVehicleDocument({
-    plate,
-    type: document.code,
+  const updateResult = await fleetService.updateVehicleDocument({
+    vehicleId,
+    documentType: document.code,
     expiryDate,
     actor: sender,
   });
+
+  if (!updateResult?.ok) {
+    await sessionService.clearSession({ sender, replyTo });
+
+    if (updateResult?.notFound) {
+      return "Data kendaraan tidak ditemukan.";
+    }
+
+    return [
+      "Sistem backend sedang tidak tersedia.",
+      "Silakan coba lagi nanti.",
+    ].join("\n");
+  }
 
   if (auditRepository && user) {
     await auditRepository.createLog({
@@ -212,6 +226,7 @@ async function handleWaitExpiryDate({ session, sender, replyTo, text, sessionSer
       target: plate,
       payload: {
         plate,
+        vehicleId,
         type: document.code,
         expiryDate,
       },
