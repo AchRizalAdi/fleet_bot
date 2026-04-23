@@ -36,7 +36,7 @@ module.exports = {
   permission: "ALERT_HARI_INI",
   pattern: /^ALERT HARI INI$/,
   async execute({ services }) {
-    const alerts = await services.fleetService.getTodayAlerts();
+    const alerts = await services.fleetService.getVehicleNotification();
     return formatAlertSummary(alerts);
   },
 };

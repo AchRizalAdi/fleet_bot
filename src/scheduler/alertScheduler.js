@@ -34,7 +34,7 @@ function createAlertScheduler({ logger, cronExpression, fleetService, sendText, 
     start() {
       task = cron.schedule(cronExpression, async () => {
         try {
-          const alerts = await fleetService.getTodayAlerts();
+          const alerts = await fleetService.getVehicleNotification();
           if (!alerts.length) {
             logger.info('No alerts to send');
             return;

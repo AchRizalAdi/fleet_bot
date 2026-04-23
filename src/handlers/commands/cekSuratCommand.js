@@ -13,9 +13,9 @@ function formatDocumentStatus(result) {
 module.exports = {
   name: "CEK_SURAT",
   permission: "CEK_SURAT",
-  pattern: /^CEK SURAT\s+([A-Z0-9-]+)$/,
+  pattern: /^CEK SURAT$/,
   async execute({ match, services }) {
-    const result = await services.fleetService.getVehicleDocuments(match[1]);
+    const result = await services.fleetService.getVehicleDocuments();
     return formatDocumentStatus(result);
   },
 };

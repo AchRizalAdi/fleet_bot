@@ -8,9 +8,9 @@ function createFleetRepository({ apiClient, logger }) {
      * Get vehicle documents by plate
      * GET /api/wa-bot/fleet/vehicle-documents/{plate}
      */
-    async findVehicleDocumentsByPlate(plate) {
+    async findVehicleDocuments(plate) {
       try {
-        const response = await apiClient.get(`/api/wa-bot/fleet/vehicle-documents/${plate}`);
+        const response = await apiClient.get(`/api/wa-bot/fleet/vehicle-documents`);
 
         if (!response?.vehicle) {
           return null;
@@ -98,7 +98,7 @@ function createFleetRepository({ apiClient, logger }) {
      * Get today's alerts
      * GET /api/wa-bot/fleet/alerts/today
      */
-    async getTodayAlerts() {
+    async getVehicleNotification() {
       try {
         const response = await apiClient.get("/api/wa-bot/vehicle/notification");
         return Array.isArray(response?.data) ? response.data : [];

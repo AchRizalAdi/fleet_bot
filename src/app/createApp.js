@@ -119,7 +119,7 @@ async function createApp() {
       logger.info(`HTTP server listening on ${env.APP_HOST}:${env.APP_PORT}`);
 
       await whatsapp.start();
-      alertScheduler.start();
+      // alertScheduler.start();
       logger.info("Fleet WA Bot started");
     },
   };

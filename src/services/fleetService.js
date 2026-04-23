@@ -1,7 +1,7 @@
 function createFleetService({ repository, logger }) {
   return {
     async getVehicleDocuments(plate) {
-      return repository.findVehicleDocumentsByPlate(plate);
+      return repository.findVehicleDocuments(plate);
     },
 
     async updateVehicleDocument({ plate, type, expiryDate, actor }) {
@@ -18,9 +18,9 @@ function createFleetService({ repository, logger }) {
       return repository.updateTireUsage({ plate, position, km, actor });
     },
 
-    async getTodayAlerts() {
+    async getVehicleNotification() {
       try {
-        const alerts = await repository.getTodayAlerts();
+        const alerts = await repository.getVehicleNotification();
         return alerts;
       } catch (error) {
         logger.error({ error: error.message }, 'Failed to fetch today alerts');
