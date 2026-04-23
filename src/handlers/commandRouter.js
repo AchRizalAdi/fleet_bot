@@ -2,7 +2,15 @@ const fs = require("fs");
 const path = require("path");
 const { normalizeMessage } = require("../utils/normalizeMessage");
 const { normalizeSender } = require("../utils/sender");
-const { formatDefaultReply, formatUserActivatedMessage, formatRegistrationPending, formatAccountDisabled, formatNoAccess, formatGenericSystemError } = require("../utils/formatter");
+const {
+  formatDefaultReply,
+  formatUserActivatedMessage,
+  formatRegistrationPending,
+  formatAccountDisabled,
+  formatNoAccess,
+  formatGenericSystemError,
+} = require("../utils/formatter");
+const { createSessionHandler } = require("./sessionHandler");
 const { isAllowed } = require("../utils/accessControl");
 const { env } = require("../config/env");
 
@@ -23,8 +31,8 @@ function normalizeJid(value = "") {
   return String(normalizeSender(value)).trim().toLowerCase();
 }
 
-function createCommandRouter({ fleetService, userRepository, auditRepository, authCacheService, logger, sendText, sendImage }) {
-  const services = { fleetService, authCacheService };
+function createCommandRouter({ fleetService, sessionService, userRepository, auditRepository, authCacheService, logger, sendText, sendImage }) {
+  const services = { fleetService, authCacheService, sessionService };
   const repositories = { userRepository, auditRepository };
   const utils = {
     formatDefaultReply,
@@ -34,6 +42,10 @@ function createCommandRouter({ fleetService, userRepository, auditRepository, au
     formatNoAccess,
     formatGenericSystemError,
   };
+
+  const sessionHandler = sessionService
+    ? createSessionHandler({ sessionService, fleetService, auditRepository, logger })
+    : null;
 
   async function handleIncoming({ sender, replyTo, text }) {
     const normalizedSender = normalizeJid(sender);
@@ -53,21 +65,7 @@ function createCommandRouter({ fleetService, userRepository, auditRepository, au
       return null; // silent ignore
     }
 
-    const trigger = "CIMI";
-    const upper = message.toUpperCase();
-
-    // Only respond if message starts with CIMI
-    if (!upper.startsWith(trigger)) {
-      logger.info({ sender: normalizedSender, text: message }, "Message ignored: missing CIMI trigger");
-      return null;
-    }
-
-    // Remove CIMI from the message before further processing
-    const commandText = message.slice(trigger.length).trim();
-    const normalizedCommand = normalizeMessage(commandText);
-    const upperCommand = normalizedCommand.toUpperCase();
-
-    logger.info({ sender: normalizedSender, replyTo, text: normalizedCommand }, "Incoming WhatsApp message");
+    logger.info({ sender: normalizedSender, replyTo, text: message }, "Incoming WhatsApp message");
 
     let user = await authCacheService.getAuth(normalizedSender);
 
@@ -112,6 +110,35 @@ function createCommandRouter({ fleetService, userRepository, auditRepository, au
       return formatAccountDisabled();
     }
 
+    const trigger = "CIMI";
+    const upper = message.toUpperCase();
+    const hasTrigger = upper.startsWith(trigger);
+    const sessionText = hasTrigger ? normalizeMessage(message.slice(trigger.length).trim()) : message;
+
+    if (sessionHandler) {
+      const activeSession = await sessionService.getSession({ sender: normalizedSender, replyTo });
+
+      if (activeSession) {
+        logger.info({ sender: normalizedSender, flow: activeSession.flow, step: activeSession.step }, "Active session detected");
+
+        return sessionHandler.continueFlow({
+          sender: normalizedSender,
+          replyTo,
+          text: sessionText,
+          user,
+        });
+      }
+    }
+
+    if (!hasTrigger) {
+      logger.info({ sender: normalizedSender, text: message }, "Message ignored: missing CIMI trigger");
+      return null;
+    }
+
+    const commandText = message.slice(trigger.length).trim();
+    const normalizedCommand = normalizeMessage(commandText);
+    const upperCommand = normalizedCommand.toUpperCase();
+
     for (const command of commandModules) {
       const match = upperCommand.match(command.pattern);
       if (!match) continue;
@@ -127,6 +154,7 @@ function createCommandRouter({ fleetService, userRepository, auditRepository, au
           match,
           user,
           sender: normalizedSender,
+          replyTo,
           authCacheService,
           services,
           repositories,

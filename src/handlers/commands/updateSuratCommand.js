@@ -1,30 +1,41 @@
+function formatUpdateSuratStartSession({ plate }) {
+  return [
+    "UPDATE SURAT",
+    "",
+    `Plat: ${plate}`,
+    "",
+    "Silakan masukkan jenis surat:",
+    "- STNK",
+    "- KIR",
+    "",
+    "Ketik BATAL untuk membatalkan.",
+  ].join("\n");
+}
+
 module.exports = {
   name: "UPDATE_SURAT",
   permission: "UPDATE_SURAT",
-  pattern: /^UPDATE SURAT\s+([A-Z0-9-]+)\s+([A-Z]+)\s+(\d{4}-\d{2}-\d{2})$/,
-  async execute({ match, sender, services, repositories, user }) {
-    const [, plate, type, expiryDate] = match;
+  pattern: /^UPDATE SURAT\s+(.+)$/,
+  async execute({ match, sender, replyTo, services }) {
+    const rawPlate = match[1] || "";
+    const plate = String(rawPlate).trim().replace(/\s+/g, " ").toUpperCase();
 
-    await services.fleetService.updateVehicleDocument({
-      plate,
-      type,
-      expiryDate,
-      actor: sender,
-    });
+    if (!plate) {
+      return "Format salah. Contoh: UPDATE SURAT B 2424 BK";
+    }
 
-    await repositories.auditRepository.createLog({
-      action: "UPDATE_SURAT",
-      actorName: user.name,
-      actorJid: sender,
-      actorRole: user.role,
-      target: plate,
-      payload: {
-        plate,
-        type,
-        expiryDate,
+    await services.sessionService.setSession({
+      sender,
+      replyTo,
+      value: {
+        flow: "UPDATE_SURAT",
+        step: "WAITING_DOCUMENT_TYPE",
+        data: {
+          plate,
+        },
       },
     });
 
-    return `UPDATE SURAT berhasil\nPlat: ${plate}\nJenis: ${type}\nExpired: ${expiryDate}`;
+    return formatUpdateSuratStartSession({ plate });
   },
 };
