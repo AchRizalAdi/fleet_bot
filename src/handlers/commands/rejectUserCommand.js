@@ -26,9 +26,9 @@ module.exports = {
       actorJid: sender,
       actorRole: user.role,
       target: result.jid,
-      payload: {
+      payload: JSON.stringify({
         code,
-      },
+      }),
     });
 
     return `User berhasil di-reject.\nKode: ${code}`;

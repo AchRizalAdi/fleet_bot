@@ -108,14 +108,7 @@ function formatSelectionPrompt(session) {
   const vehicle = session.data.vehicle || {};
   const documents = getDocumentDefinitions(vehicle);
 
-  return [
-    "Pilihan dokumen tidak valid.",
-    "",
-    "Pilih salah satu dokumen berikut:",
-    formatSelectionOptions(documents),
-    "",
-    "Ketik BATAL untuk membatalkan.",
-  ].join("\n");
+  return ["Pilihan dokumen tidak valid.", "", "Pilih salah satu dokumen berikut:", formatSelectionOptions(documents), "", "Ketik BATAL untuk membatalkan."].join("\n");
 }
 
 function formatExpiryPrompt({ plate, documentLabel }) {
@@ -137,13 +130,7 @@ function formatInvalidDate() {
 }
 
 function formatUpdateSuccess({ plate, documentLabel, expiryDate }) {
-  return [
-    "UPDATE SURAT BERHASIL",
-    "",
-    `Plat: ${plate || "-"}`,
-    `Dokumen: ${documentLabel || "-"}`,
-    `Tanggal berlaku baru: ${expiryDate || "-"}`,
-  ].join("\n");
+  return ["UPDATE SURAT BERHASIL", "", `Plat: ${plate || "-"}`, `Dokumen: ${documentLabel || "-"}`, `Tanggal berlaku baru: ${expiryDate || "-"}`].join("\n");
 }
 
 function formatGenericSessionError() {
@@ -152,12 +139,16 @@ function formatGenericSessionError() {
 
 function resolveDocumentBySelection(session, selection) {
   const documents = getDocumentDefinitions(session.data.vehicle || {});
-  const normalized = String(selection || "").trim().toUpperCase();
+  const normalized = String(selection || "")
+    .trim()
+    .toUpperCase();
   return documents.find((document) => document.enabled && document.code === normalized) || null;
 }
 
 async function handleWaitDocumentSelection({ session, sender, replyTo, text, sessionService }) {
-  const selection = String(text || "").trim().toUpperCase();
+  const selection = String(text || "")
+    .trim()
+    .toUpperCase();
   const document = resolveDocumentBySelection(session, selection);
 
   if (!document) {
@@ -211,10 +202,7 @@ async function handleWaitExpiryDate({ session, sender, replyTo, text, sessionSer
       return "Data kendaraan tidak ditemukan.";
     }
 
-    return [
-      "Sistem backend sedang tidak tersedia.",
-      "Silakan coba lagi nanti.",
-    ].join("\n");
+    return ["Sistem backend sedang tidak tersedia.", "Silakan coba lagi nanti."].join("\n");
   }
 
   if (auditRepository && user) {
@@ -224,12 +212,12 @@ async function handleWaitExpiryDate({ session, sender, replyTo, text, sessionSer
       actorJid: sender,
       actorRole: user.role,
       target: plate,
-      payload: {
+      payload: JSON.stringify({
         plate,
         vehicleId,
         type: document.code,
         expiryDate,
-      },
+      }),
     });
   }
 

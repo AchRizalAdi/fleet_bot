@@ -32,11 +32,11 @@ module.exports = {
       actorJid: sender,
       actorRole: user.role,
       target: approvedJid,
-      payload: {
+      payload: JSON.stringify({
         code,
         approvedRole: role.toLowerCase(),
         approvedName: name,
-      },
+      }),
     });
 
     try {

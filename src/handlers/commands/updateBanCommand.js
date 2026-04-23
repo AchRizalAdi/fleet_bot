@@ -18,11 +18,11 @@ module.exports = {
       actorJid: sender,
       actorRole: user.role,
       target: plate,
-      payload: {
+      payload: JSON.stringify({
         plate,
         position,
         km: Number(km),
-      },
+      }),
     });
 
     return `UPDATE BAN berhasil\nPlat: ${plate}\nPosisi: ${position}\nKM: ${km}`;
