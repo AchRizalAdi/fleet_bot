@@ -10,6 +10,7 @@ function createFleetRepository({ apiClient, logger }) {
      */
     async findVehicleDocuments(params = {}) {
       try {
+        console.log("API Client is making request to fetch vehicle documents with params:", params);
         const response = await apiClient.post(`/api/wa-bot/vehicle/document`, params);
 
         if (!response?.data) {
