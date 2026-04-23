@@ -20,7 +20,7 @@ function createAuditRepository({ apiClient, logger }) {
       note = null,
     }) {
       try {
-        await apiClient.post('/api/wa-bot/audit-logs', {
+        await apiClient.post('/api/wa-bot/users/insert-audit-logs', {
           action,
           actor_name: actorName,
           actor_jid: actorJid,
