@@ -8,19 +8,15 @@ function createFleetRepository({ apiClient, logger }) {
      * Get vehicle documents by plate
      * GET /api/wa-bot/fleet/vehicle-documents/{plate}
      */
-    async findVehicleDocuments(plate) {
+    async findVehicleDocuments(params) {
       try {
-        const response = await apiClient.get(`/api/wa-bot/fleet/vehicle-documents`);
+        const response = await apiClient.post(`/api/wa-bot/vehicle/document`, { params });
 
-        if (!response?.vehicle) {
+        if (!response?.data) {
           return null;
         }
 
-        return {
-          plate: response.vehicle.plate,
-          documents: response.vehicle.documents || {},
-          status: response.vehicle.status,
-        };
+        return response.data;
       } catch (error) {
         logger.error({ error: error.message, plate }, "Failed to fetch vehicle documents");
         return null;
