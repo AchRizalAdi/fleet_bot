@@ -15,7 +15,7 @@ function formatHelp(permissions = []) {
       groupPermission: "U_MAN",
       commands: [
         { permission: "LIST_PENDING_USER", text: "LIST PENDING USER" },
-        { permission: "APPROVE_USER", text: "APPROVE USER <CODE> <ROLES/SUPERADMIN/USER> <NAMA>" },
+        { permission: "APPROVE_USER", text: "APPROVE <CODE> <ROLES/SUPERADMIN/USER> <NAMA>" },
         { permission: "REJECT_USER", text: "REJECT USER <CODE>" },
       ],
     },

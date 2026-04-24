@@ -1,10 +1,10 @@
 const Fastify = require('fastify');
 const { registerHealthRoutes } = require('../routes/healthRoutes');
 
-function buildHttpServer({ healthService }) {
+function buildHttpServer({ logger, healthService, healthProviders }) {
   const app = Fastify({ logger: false });
 
-  registerHealthRoutes(app, { healthService });
+  registerHealthRoutes(app, { logger, healthService, healthProviders });
 
   return app;
 }

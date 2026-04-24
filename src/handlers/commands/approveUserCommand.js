@@ -1,7 +1,7 @@
 module.exports = {
   name: "APPROVE_USER",
   permission: "APPROVE_USER",
-  pattern: /^APPROVE\s+([A-Z0-9-]+)\s+(VIEWER|OPERATOR|ADMIN)\s+(.+)$/,
+  pattern: /^APPROVE\s+([A-Z0-9-]+)\s+(SUPERADMIN|USER)\s+(.+)$/,
   async execute({ match, sender, authCacheService, repositories, utils, sendText, logger, user }) {
     const [, code, role, name] = match;
 
