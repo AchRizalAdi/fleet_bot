@@ -38,6 +38,10 @@ function formatGenericSystemError() {
   return "Terjadi gangguan sistem. Silakan coba lagi nanti.";
 }
 
+function formatRateLimitExceeded() {
+  return ["TERLALU BANYAK PERMINTAAN", "", "Silakan coba lagi beberapa saat."].join("\n");
+}
+
 module.exports = {
   formatDefaultReply,
   formatUserActivatedMessage,
@@ -45,4 +49,5 @@ module.exports = {
   formatAccountDisabled,
   formatNoAccess,
   formatGenericSystemError,
+  formatRateLimitExceeded,
 };

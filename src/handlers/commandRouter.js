@@ -9,6 +9,7 @@ const {
   formatAccountDisabled,
   formatNoAccess,
   formatGenericSystemError,
+  formatRateLimitExceeded,
 } = require("../utils/formatter");
 const { createSessionHandler } = require("./sessionHandler");
 const { isAllowed } = require("../utils/accessControl");
@@ -31,7 +32,7 @@ function normalizeJid(value = "") {
   return String(normalizeSender(value)).trim().toLowerCase();
 }
 
-function createCommandRouter({ fleetService, sessionService, userRepository, auditRepository, authCacheService, logger, sendText, sendImage }) {
+function createCommandRouter({ fleetService, sessionService, rateLimitService, userRepository, auditRepository, authCacheService, logger, sendText, sendImage }) {
   const services = { fleetService, authCacheService, sessionService };
   const repositories = { userRepository, auditRepository };
   const utils = {
@@ -41,6 +42,7 @@ function createCommandRouter({ fleetService, sessionService, userRepository, aud
     formatAccountDisabled,
     formatNoAccess,
     formatGenericSystemError,
+    formatRateLimitExceeded,
   };
 
   const sessionHandler = sessionService
@@ -66,6 +68,42 @@ function createCommandRouter({ fleetService, sessionService, userRepository, aud
     }
 
     logger.info({ sender: normalizedSender, replyTo, text: message }, "Incoming WhatsApp message");
+
+    const trigger = "CIMI";
+    const upper = message.toUpperCase();
+    const hasTrigger = upper.startsWith(trigger);
+
+    if (!hasTrigger) {
+      logger.info({ sender: normalizedSender, text: message }, "Message ignored: missing CIMI trigger");
+      return null;
+    }
+
+    if (env.RATE_LIMIT_ENABLED && rateLimitService) {
+      const rateLimit = await rateLimitService.checkLimit({
+        key: normalizedSender,
+        limit: env.RATE_LIMIT_MAX_REQUESTS,
+        windowSeconds: env.RATE_LIMIT_WINDOW_SECONDS,
+      });
+
+      if (!rateLimit.allowed) {
+        logger.warn(
+          {
+            sender: normalizedSender,
+            resetInSeconds: rateLimit.resetInSeconds,
+          },
+          "Rate limit exceeded",
+        );
+        return formatRateLimitExceeded();
+      }
+
+      logger.info(
+        {
+          sender: normalizedSender,
+          remaining: rateLimit.remaining,
+        },
+        "Rate limit allowed",
+      );
+    }
 
     let user = await authCacheService.getAuth(normalizedSender);
 
@@ -110,10 +148,7 @@ function createCommandRouter({ fleetService, sessionService, userRepository, aud
       return formatAccountDisabled();
     }
 
-    const trigger = "CIMI";
-    const upper = message.toUpperCase();
-    const hasTrigger = upper.startsWith(trigger);
-    const sessionText = hasTrigger ? normalizeMessage(message.slice(trigger.length).trim()) : message;
+    const sessionText = normalizeMessage(message.slice(trigger.length).trim());
 
     if (sessionHandler) {
       const activeSession = await sessionService.getSession({ sender: normalizedSender, replyTo });
@@ -128,11 +163,6 @@ function createCommandRouter({ fleetService, sessionService, userRepository, aud
           user,
         });
       }
-    }
-
-    if (!hasTrigger) {
-      logger.info({ sender: normalizedSender, text: message }, "Message ignored: missing CIMI trigger");
-      return null;
     }
 
     const commandText = message.slice(trigger.length).trim();

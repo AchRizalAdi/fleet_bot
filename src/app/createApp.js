@@ -12,6 +12,7 @@ const { createBaileysAdapter } = require("../adapters/whatsapp/baileysAdapter");
 const { getRedisClient } = require("../lib/redisClient");
 const { createAuthCacheService } = require("../services/authCacheService");
 const { createSessionService } = require("../services/sessionService");
+const { createRateLimitService } = require("../services/rateLimitService");
 
 function createHealthService({ redis, apiClient, backendHealthPath }) {
   return {
@@ -49,6 +50,7 @@ async function createApp() {
   const redis = await getRedisClient(logger);
   const authCacheService = createAuthCacheService({ redis, logger });
   const sessionService = createSessionService({ redis, logger });
+  const rateLimitService = createRateLimitService({ redis, logger });
 
   // Initialize API Client
   const apiClient = createApiClient({ env, logger });
@@ -90,6 +92,7 @@ async function createApp() {
   const commandRouter = createCommandRouter({
     fleetService,
     sessionService,
+    rateLimitService,
     userRepository,
     auditRepository,
     authCacheService,

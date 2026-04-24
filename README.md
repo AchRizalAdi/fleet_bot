@@ -71,6 +71,9 @@ WA_AUTH_DIR=.wa-auth
 API_BASE_URL=https://your-laravel-api
 API_KEY=your-api-key
 REDIS_URL=redis://127.0.0.1:6379
+RATE_LIMIT_ENABLED=true
+RATE_LIMIT_MAX_REQUESTS=5
+RATE_LIMIT_WINDOW_SECONDS=10
 ALLOW_PERSONAL=true
 ALLOW_GROUP=true
 ALLOWED_USERS=
@@ -82,6 +85,9 @@ ALLOWED_GROUPS=
 - `API_BASE_URL`: Laravel API base URL (in current code this is `TMS_API_BASE_URL`).
 - `API_KEY`: API key sent as `x-api-key` header (in current code this is `TMS_API_KEY`).
 - `REDIS_URL`: single Redis connection URL (current code uses split vars: `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`, `REDIS_DB`).
+- `RATE_LIMIT_ENABLED`: enables/disables Redis-based command rate limiting.
+- `RATE_LIMIT_MAX_REQUESTS`: max allowed command count in each rate limit window.
+- `RATE_LIMIT_WINDOW_SECONDS`: time window (seconds) used by the limiter.
 - `ALLOW_PERSONAL`: allow personal chats when no explicit allowlist is set.
 - `ALLOW_GROUP`: allow group chats when no explicit allowlist is set.
 - `ALLOWED_USERS`: comma-separated personal JIDs allowlist (overrides `ALLOW_PERSONAL` when populated).
@@ -158,6 +164,38 @@ Tip: user can cancel flow anytime with `BATAL` or `CANCEL`.
 - Pino logging: operational/system logs for inbound messages, command matching, backend calls, Redis events, and errors.
 - `auditRepository`: business/audit logs sent to Laravel API (`/api/wa-bot/users/insert-audit-logs`) for traceability.
 
+## Rate Limiting
+
+The bot uses Redis-based rate limiting to prevent spam and accidental command loops.
+
+Default rule:
+
+- 5 commands
+- per 10 seconds
+- per sender JID
+
+Environment variables:
+
+```env
+RATE_LIMIT_ENABLED=true
+RATE_LIMIT_MAX_REQUESTS=5
+RATE_LIMIT_WINDOW_SECONDS=10
+```
+
+Redis key format:
+
+```text
+wa:ratelimit:<sender>
+```
+
+If the limit is exceeded, the bot responds:
+
+```text
+TERLALU BANYAK PERMINTAAN
+
+Silakan coba lagi beberapa saat.
+```
+
 ## 12. Deployment
 
 Recommended production deployment pattern:
@@ -188,7 +226,6 @@ Deploy script note:
 
 ## 14. Future Improvements
 
-- Add command-level rate limiting.
 - Add centralized monitoring/alerting (logs, metrics, uptime checks).
 - Add CI/CD pipeline for lint/test/build/deploy.
 - Add admin dashboard for user approvals, permissions, and audit exploration.
